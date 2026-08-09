@@ -94,12 +94,17 @@ scripts/generate-icons.mjs   アイコンを生成（依存パッケージなし
 
 ## デプロイ
 
-`main` に push すると GitHub Actions がテスト → ビルド → GitHub Pages 公開まで行います
+push すると GitHub Actions がテスト → ビルド → GitHub Pages 公開まで行います
 （`.github/workflows/deploy.yml`）。`vite.config.js` の `base` は `'./'` なので、
 `https://<user>.github.io/<repo>/` のようなサブパス配信でも動きます。
 
-リポジトリ側で一度だけ設定が必要です: **Settings → Pages → Source** を
-**GitHub Actions** にしてください。
+リポジトリ側では **Settings → Pages → Source** を **GitHub Actions** にしておく
+必要があります（設定済み）。
+
+公開の対象ブランチは `main` と、いまの作業ブランチです。`main` を作ったあとは、
+ワークフローの `branches:` から作業ブランチの行を消してください。
+
+Pull Request では test と build までは走り、デプロイは行いません。
 
 ## オフライン
 

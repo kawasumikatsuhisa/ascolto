@@ -2,7 +2,11 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    # main ができるまでは作業ブランチをそのまま公開する。
+    # main を作ったあとは、下の作業ブランチの行を消してよい。
+    branches:
+      - main
+      - claude/italian-numbers-learning-app-rn5ki5
   pull_request:
   workflow_dispatch:
 
