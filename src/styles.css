@@ -716,8 +716,16 @@ button {
 }
 
 .stat-more {
+  flex: 0 0 auto;
   font-size: 0.72rem;
   font-weight: 400;
+}
+
+.stat-summary {
+  margin-left: 8px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
 }
 
 .stat-row {

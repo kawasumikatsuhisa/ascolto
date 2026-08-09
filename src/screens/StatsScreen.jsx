@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { describeTag, tagGroup } from '../lib/generator.js';
+import { describeTag, isAggregateTag, tagGroup } from '../lib/generator.js';
 
 /** 単語は項目数が多いので、グループごとに苦手な順で上位だけ出す */
 const ROWS_PER_GROUP = 12;
@@ -22,13 +22,22 @@ export default function StatsScreen({ stats, progress, accuracy, onBack, onReset
 
     const byGroup = new Map();
     for (const row of rows) {
-      if (!byGroup.has(row.group)) byGroup.set(row.group, []);
-      byGroup.get(row.group).push(row);
+      if (!byGroup.has(row.group)) {
+        byGroup.set(row.group, { summary: null, rows: [] });
+      }
+      const bucket = byGroup.get(row.group);
+      // 話題ぜんぶの成績は見出しに出す。個々の語と同じ列に混ぜると
+      // 「あいさつぜんぶ」が語のあいだに紛れて分かりにくい。
+      if (isAggregateTag(row.tag)) bucket.summary = row;
+      else bucket.rows.push(row);
     }
     return [...byGroup.entries()];
   }, [stats]);
 
-  const weakest = groups.flatMap(([, rows]) => rows).slice(0, 3);
+  const weakest = groups
+    .flatMap(([, bucket]) => bucket.rows)
+    .sort((a, b) => a.rate - b.rate || b.seen - a.seen)
+    .slice(0, 3);
 
   return (
     <div className="screen">
@@ -75,10 +84,17 @@ export default function StatsScreen({ stats, progress, accuracy, onBack, onReset
           <p className="note">まだ記録がありません。1セットやってみてください。</p>
         )}
 
-        {groups.map(([group, rows]) => (
+        {groups.map(([group, { summary, rows }]) => (
           <section className="stat-group" key={group}>
             <h3>
-              {group}
+              <span>
+                {group}
+                {summary && (
+                  <span className="stat-summary">
+                    {Math.round(summary.rate * 100)}% · {summary.seen}問
+                  </span>
+                )}
+              </span>
               {rows.length > ROWS_PER_GROUP && (
                 <span className="stat-more">
                   苦手な{ROWS_PER_GROUP}件 / 全{rows.length}件

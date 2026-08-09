@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { TOPICS, TOPIC_IDS, topicById, topicSize } from './vocabulary.js';
-import { generateItem, CATEGORIES } from './generator.js';
+import {
+  generateItem,
+  describeTag,
+  isAggregateTag,
+  tagGroup,
+  CATEGORIES,
+} from './generator.js';
 import { CHOICE_COUNT } from './choices.js';
 import { DEFAULT_SETTINGS } from './storage.js';
 
@@ -170,5 +176,57 @@ describe('単語の選択肢', () => {
       seen.add(item.choices.join('|'));
     }
     expect(seen.size).toBeGreaterThan(50);
+  });
+});
+
+describe('成績表示のラベル', () => {
+  it('単語ごとのタグはその単語を表示する', () => {
+    // word:saluti:3 のように区切りが3つあるタグで、添字を落として
+    // 「あいさつぜんぶ」に潰れてしまう不具合があった
+    for (const topic of TOPICS) {
+      topic.entries.forEach((entry, index) => {
+        expect(describeTag(`word:${topic.id}:${index}`)).toBe(entry.it);
+      });
+    }
+  });
+
+  it('話題ぜんぶのタグだけが集計扱いになる', () => {
+    for (const topic of TOPICS) {
+      expect(isAggregateTag(`word:${topic.id}`)).toBe(true);
+      expect(describeTag(`word:${topic.id}`)).toBe(`${topic.ja}ぜんぶ`);
+      topic.entries.forEach((_, index) => {
+        expect(isAggregateTag(`word:${topic.id}:${index}`)).toBe(false);
+      });
+    }
+    expect(isAggregateTag('num:mille')).toBe(false);
+    expect(isAggregateTag('time:meno')).toBe(false);
+  });
+
+  it('同じ話題の単語は同じ見出しにまとまる', () => {
+    for (const topic of TOPICS) {
+      const heading = `単語 · ${topic.ja}`;
+      expect(tagGroup(`word:${topic.id}`)).toBe(heading);
+      topic.entries.forEach((_, index) => {
+        expect(tagGroup(`word:${topic.id}:${index}`)).toBe(heading);
+      });
+    }
+  });
+
+  it('話題が違えば見出しも違う', () => {
+    const headings = TOPICS.map((t) => tagGroup(`word:${t.id}:0`));
+    expect(new Set(headings).size).toBe(TOPICS.length);
+  });
+
+  it('実際に出題したタグがすべて意味のあるラベルになる', () => {
+    const rng = seeded(11);
+    const settings = wordsOnly();
+    for (let i = 0; i < 300; i++) {
+      const item = generateItem(settings, {}, { rng });
+      for (const tag of item.tags) {
+        const label = describeTag(tag);
+        expect(label).toBeTruthy();
+        expect(label).not.toBe(tag); // 生のタグがそのまま出ていない
+      }
+    }
   });
 });

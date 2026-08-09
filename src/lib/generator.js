@@ -383,9 +383,18 @@ export function generateItem(settings, stats = {}, opts = {}) {
   return { ...best, choices: buildChoices(best, rng) };
 }
 
+/** 話題ぜんぶの成績を表すタグか（word:saluti のように単語の添字が無いもの） */
+export function isAggregateTag(tag) {
+  const parts = tag.split(':');
+  return parts[0] === 'word' && parts.length === 2;
+}
+
 /** タグの日本語ラベル（成績画面用） */
 export function describeTag(tag) {
-  const [group, rest] = tag.split(':');
+  // word:saluti:3 のように区切りが3つある種類があるので、
+  // 先頭だけ取って残りは繋ぎ直す（[group, rest] の分割代入だと添字が落ちる）
+  const [group, ...restParts] = tag.split(':');
+  const rest = restParts.join(':');
   const fixed = {
     'num:zero': 'zero',
     'num:1-10': '1〜10',
@@ -421,7 +430,8 @@ export function describeTag(tag) {
     const topic = topicById(topicId);
     if (!topic) return rest;
     // 話題そのもののタグか、単語ごとのタグか
-    return index === undefined ? `${topic.ja}（全体）` : topic.entries[Number(index)].it;
+    if (index === undefined) return `${topic.ja}ぜんぶ`;
+    return topic.entries[Number(index)]?.it ?? rest;
   }
   return rest;
 }
