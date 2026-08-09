@@ -1,17 +1,43 @@
-import { useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import { CATEGORIES } from '../lib/generator.js';
 import { matches } from '../lib/italianNumbers.js';
 import { speak, speechSupported } from '../lib/speech.js';
 
 const categoryLabel = (id) => CATEGORIES.find((c) => c.id === id)?.ja ?? id;
 
-/** 表示する文字列の長さに応じて文字サイズを落とす */
+/**
+ * 表示する文字列の長さに応じて文字サイズを落とす。
+ * イタリア語の数詞は分かち書きしないので、長いものは途中で折り返すしかない。
+ * 1行に収まるところまで段階的に小さくする。
+ */
 function sizeClass(text) {
   const len = String(text).length;
   if (len <= 6) return 'xl';
-  if (len <= 14) return 'lg';
-  if (len <= 26) return 'md';
-  return 'sm';
+  if (len <= 12) return 'lg';
+  if (len <= 18) return 'md';
+  if (len <= 20) return 'sm';
+  if (len <= 26) return 'xs';
+  return 'xxs';
+}
+
+/**
+ * イタリア語の数詞は分かち書きしないので、狭い画面では折り返すしかない。
+ * 何もしないと音節の途中で切れて読みにくいので、語の切れ目（〜mila /
+ * 〜cento / 十の位）に <wbr> を入れて、そこで折り返させる。
+ * 見た目が整うだけでなく、語の組み立てが見えるので読み解きの助けにもなる。
+ */
+const MORPHEME_BREAK =
+  /(?=mila|mille|cento|venti|trenta|quaranta|cinquanta|sessanta|settanta|ottanta|novanta)/;
+
+function Wrapped({ text }) {
+  const parts = String(text).split(MORPHEME_BREAK);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => (
+    <Fragment key={i}>
+      {i > 0 && <wbr />}
+      {part}
+    </Fragment>
+  ));
 }
 
 export default function DrillScreen({
@@ -27,8 +53,19 @@ export default function DrillScreen({
   const { item, revealed, done, target, finished } = session;
   const inputRef = useRef(null);
 
-  // 入力モードは「日本語/数字 -> イタリア語」のときだけ使う
-  const typingActive = settings.typing && !item.reverse && !finished;
+  const hasChoices = (item.choices?.length ?? 0) > 1;
+  const mode =
+    settings.answerMode === 'choice' && hasChoices
+      ? 'choice'
+      : settings.answerMode === 'typing' && !item.reverse
+        ? 'typing'
+        : 'reveal';
+
+  // 選択肢は「いちばん長いもの」に合わせて全部を同じ大きさにする。
+  // ボタンごとに文字サイズが変わると、長さがヒントになってしまう。
+  const choiceSize = sizeClass(
+    (item.choices ?? []).reduce((a, b) => (a.length >= b.length ? a : b), ''),
+  );
 
   const say = () => speak(item.speech, settings.speechRate);
 
@@ -38,17 +75,28 @@ export default function DrillScreen({
   }, [revealed, item, settings.autoSpeak, settings.speechRate]);
 
   useEffect(() => {
-    if (typingActive && !revealed) inputRef.current?.focus();
-  }, [typingActive, revealed, item]);
+    if (mode === 'typing' && !revealed) inputRef.current?.focus();
+  }, [mode, revealed, item]);
 
   // PCで練習するとき用のショートカット（スマホでは使われない）
   useEffect(() => {
     const onKey = (e) => {
-      if (finished) return;
-      if (e.target instanceof HTMLInputElement) return;
+      if (finished || e.target instanceof HTMLInputElement) return;
+
+      if (mode === 'choice' && !revealed) {
+        const index = Number(e.key) - 1;
+        if (index >= 0 && index < item.choices.length) {
+          e.preventDefault();
+          onCheck(item.choices[index] === item.answer, item.choices[index]);
+        }
+        return;
+      }
       if (!revealed && (e.code === 'Space' || e.code === 'Enter')) {
         e.preventDefault();
         onReveal();
+      } else if (revealed && mode === 'choice' && (e.code === 'Space' || e.code === 'Enter')) {
+        e.preventDefault();
+        onGrade(session.checked ? 'good' : 'again');
       } else if (revealed && ['Digit1', 'Digit2', 'Digit3'].includes(e.code)) {
         e.preventDefault();
         onGrade(['again', 'hard', 'good'][Number(e.code.slice(-1)) - 1]);
@@ -72,7 +120,7 @@ export default function DrillScreen({
                 {session.good}
                 <span className="metric-unit">/{session.done}</span>
               </div>
-              <div className="metric-label">言えた</div>
+              <div className="metric-label">正解</div>
             </div>
           </div>
           <p className="note">
@@ -91,9 +139,9 @@ export default function DrillScreen({
     );
   }
 
-  const submit = (e) => {
+  const submitTyping = (e) => {
     e.preventDefault();
-    onCheck(matches(session.input, item.answer));
+    onCheck(matches(session.input, item.answer), session.input);
   };
 
   return (
@@ -119,18 +167,23 @@ export default function DrillScreen({
       <main className="card">
         <p className="prompt-note">{item.promptNote}</p>
         <p className={`prompt prompt-${sizeClass(item.prompt)}`}>
-          {item.prompt}
+          <Wrapped text={item.prompt} />
         </p>
 
         {revealed && (
           <div className="answer-block">
             {session.checked !== null && (
               <p className={`verdict ${session.checked ? 'ok' : 'ng'}`}>
-                {session.checked ? '正解' : `不正解: ${session.input || '（無記入）'}`}
+                {session.checked ? '正解' : '不正解'}
+              </p>
+            )}
+            {!session.checked && session.picked && (
+              <p className="picked">
+                選んだのは <Wrapped text={session.picked} />
               </p>
             )}
             <p className={`answer answer-${sizeClass(item.answer)}`}>
-              {item.answer}
+              <Wrapped text={item.answer} />
             </p>
             {item.answerNote && <p className="answer-note">{item.answerNote}</p>}
             {speechSupported && (
@@ -143,8 +196,32 @@ export default function DrillScreen({
       </main>
 
       <div className="actions">
-        {!revealed && typingActive && (
-          <form className="typing" onSubmit={submit}>
+        {/* 選択式: 選ぶ → 正誤と規則を見る → 次へ */}
+        {mode === 'choice' && !revealed && (
+          <div className="choice-list">
+            {item.choices.map((choice) => (
+              <button
+                key={choice}
+                className={`btn btn-choice choice-${choiceSize}`}
+                onClick={() => onCheck(choice === item.answer, choice)}
+              >
+                <Wrapped text={choice} />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {mode === 'choice' && revealed && (
+          <button
+            className="btn btn-primary btn-tall"
+            onClick={() => onGrade(session.checked ? 'good' : 'again')}
+          >
+            次へ
+          </button>
+        )}
+
+        {mode === 'typing' && !revealed && (
+          <form className="typing" onSubmit={submitTyping}>
             <input
               ref={inputRef}
               className="text-input"
@@ -163,14 +240,14 @@ export default function DrillScreen({
           </form>
         )}
 
-        {!revealed && !typingActive && (
+        {mode === 'reveal' && !revealed && (
           <button className="btn btn-primary btn-tall" onClick={onReveal}>
             めくる
             <span className="btn-sub">先に声に出してから</span>
           </button>
         )}
 
-        {revealed && (
+        {mode !== 'choice' && revealed && (
           <div className="grade-row">
             <button
               className="btn btn-grade btn-again"

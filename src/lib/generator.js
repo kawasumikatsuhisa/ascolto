@@ -11,6 +11,7 @@
  */
 
 import { toItalian, featureTags } from './italianNumbers.js';
+import { buildChoices } from './choices.js';
 import {
   WEEKDAYS,
   MONTHS,
@@ -109,6 +110,7 @@ function makeNumberItem(settings, rng) {
   return {
     key: `num:${n}:${reverse ? 'r' : 'p'}`,
     category: 'numbers',
+    source: { kind: 'number', n },
     reverse,
     prompt: reverse ? word : String(n),
     promptNote: reverse ? '数字で言う' : 'イタリア語で言う',
@@ -134,6 +136,7 @@ function makeTimeItem(settings, rng) {
   return {
     key: `time:${clock}:${official ? 'u' : 'c'}:${reverse ? 'r' : 'p'}`,
     category: 'time',
+    source: { kind: 'time', hour, minute, official },
     reverse,
     prompt: reverse ? phrase : clock,
     promptNote: reverse
@@ -161,6 +164,7 @@ function makeDateItem(settings, rng) {
     return {
       key: `year:${year}`,
       category: 'date',
+      source: { kind: 'year', year },
       reverse: false,
       prompt: `${year}年`,
       promptNote: '年号をイタリア語で言う',
@@ -182,6 +186,7 @@ function makeDateItem(settings, rng) {
     return {
       key: `fulldate:${month}-${day}-${weekday}`,
       category: 'date',
+      source: { kind: 'date', month, day, weekday },
       reverse: false,
       prompt: `${month}月${day}日(${WEEKDAYS[weekday].jaShort})`,
       promptNote: '曜日から続けて言う',
@@ -198,6 +203,7 @@ function makeDateItem(settings, rng) {
   return {
     key: `date:${month}-${day}`,
     category: 'date',
+    source: { kind: 'date', month, day },
     reverse: false,
     prompt: `${month}月${day}日`,
     promptNote: '冠詞をつけて言う',
@@ -220,6 +226,7 @@ function makeWeekdayItem(settings, rng) {
     return {
       key: `weekday-seq:${index}`,
       category: 'weekday',
+      source: { kind: 'weekday', index: (index + 1) % 7 },
       reverse: false,
       prompt: `${w.it} の次は？`,
       promptNote: '曜日をイタリア語で',
@@ -234,6 +241,7 @@ function makeWeekdayItem(settings, rng) {
   return {
     key: `weekday:${index}:${reverse ? 'r' : 'p'}`,
     category: 'weekday',
+    source: { kind: 'weekday', index },
     reverse,
     prompt: reverse ? w.it : w.ja,
     promptNote: reverse ? '日本語で' : 'イタリア語で言う',
@@ -254,6 +262,7 @@ function makeMonthItem(settings, rng) {
     return {
       key: `month-seq:${index}`,
       category: 'month',
+      source: { kind: 'month', index: (index + 1) % 12 },
       reverse: false,
       prompt: `${m.it} の次は？`,
       promptNote: '月をイタリア語で',
@@ -268,6 +277,7 @@ function makeMonthItem(settings, rng) {
   return {
     key: `month:${index}:${reverse ? 'r' : 'p'}`,
     category: 'month',
+    source: { kind: 'month', index },
     reverse,
     prompt: reverse ? m.it : m.ja,
     promptNote: reverse ? '日本語で' : 'イタリア語で言う',
@@ -334,7 +344,8 @@ export function generateItem(settings, stats = {}, opts = {}) {
     }
   }
 
-  return best;
+  // 選択肢は採用が決まってから作る（捨てる候補のぶんを無駄に作らない）
+  return { ...best, choices: buildChoices(best, rng) };
 }
 
 /** タグの日本語ラベル（成績画面用） */

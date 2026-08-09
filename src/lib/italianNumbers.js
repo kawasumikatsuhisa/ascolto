@@ -20,7 +20,7 @@ export const MIN_NUMBER = 0;
 export const MAX_NUMBER = 9999;
 
 /** 0〜9 の語。倍数語（duecento の due, tremila の tre）にも使う。 */
-const ONES = [
+export const ONES = [
   'zero',
   'uno',
   'due',
@@ -34,7 +34,7 @@ const ONES = [
 ];
 
 /** 10〜19 の語。規則性がないので個別に持つ。 */
-const TEENS = [
+export const TEENS = [
   'dieci',
   'undici',
   'dodici',
@@ -48,7 +48,7 @@ const TEENS = [
 ];
 
 /** 十の位の語。添字が十の位の数字と一致するよう先頭2つは空にしてある。 */
-const TENS = [
+export const TENS = [
   null,
   null,
   'venti',

@@ -21,7 +21,8 @@ export const DEFAULT_SETTINGS = {
   sessionLength: 20,
   autoSpeak: false, // 音を出せない場面が多いので既定はオフ
   speechRate: 0.85,
-  typing: false, // 既定は「思い出す → めくる → 自己採点」
+  // 回答方法: choice（選択式）/ reveal（めくって自己採点）/ typing（入力）
+  answerMode: 'choice',
   theme: 'dark',
 };
 
@@ -51,14 +52,22 @@ function write(key, value) {
   }
 }
 
-export const loadSettings = () => ({
-  ...DEFAULT_SETTINGS,
-  ...read('settings', {}),
-  categories: {
-    ...DEFAULT_SETTINGS.categories,
-    ...(read('settings', {}).categories ?? {}),
-  },
-});
+export const loadSettings = () => {
+  const stored = read('settings', {});
+  const settings = {
+    ...DEFAULT_SETTINGS,
+    ...stored,
+    categories: { ...DEFAULT_SETTINGS.categories, ...(stored.categories ?? {}) },
+  };
+
+  // 旧版の typing フラグから answerMode へ移行する
+  if (!stored.answerMode && 'typing' in stored) {
+    settings.answerMode = stored.typing ? 'typing' : 'reveal';
+  }
+  delete settings.typing;
+
+  return settings;
+};
 export const saveSettings = (v) => write('settings', v);
 
 export const loadStats = () => read('stats', {});

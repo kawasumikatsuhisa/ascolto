@@ -65,6 +65,7 @@ export default function App() {
       recent: [item.key],
       input: '',
       checked: null,
+      picked: null,
       finished: false,
     });
     setScreen('drill');
@@ -121,6 +122,7 @@ export default function App() {
           revealed: false,
           input: '',
           checked: null,
+          picked: null,
         };
       });
     },
@@ -131,8 +133,10 @@ export default function App() {
     setSession((s) => (s ? { ...s, input: value } : s));
   }, []);
 
-  const check = useCallback((isCorrect) => {
-    setSession((s) => (s ? { ...s, revealed: true, checked: isCorrect } : s));
+  const check = useCallback((isCorrect, picked = null) => {
+    setSession((s) =>
+      s ? { ...s, revealed: true, checked: isCorrect, picked } : s,
+    );
   }, []);
 
   const quit = useCallback(() => {

@@ -337,7 +337,7 @@ button {
   margin: 0;
   font-weight: 700;
   line-height: 1.15;
-  word-break: break-word;
+  overflow-wrap: break-word;
   font-variant-numeric: tabular-nums;
 }
 
@@ -352,6 +352,12 @@ button {
 }
 .prompt-sm {
   font-size: clamp(1.3rem, 6vw, 1.9rem);
+}
+.prompt-xs {
+  font-size: clamp(1rem, 4.6vw, 1.6rem);
+}
+.prompt-xxs {
+  font-size: clamp(0.9rem, 4vw, 1.4rem);
 }
 
 .answer-block {
@@ -369,7 +375,7 @@ button {
   color: var(--accent);
   font-weight: 700;
   line-height: 1.25;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .answer-xl {
@@ -382,7 +388,13 @@ button {
   font-size: clamp(1.5rem, 7vw, 2.2rem);
 }
 .answer-sm {
-  font-size: clamp(1.2rem, 5.5vw, 1.7rem);
+  font-size: clamp(1.25rem, 5.6vw, 1.8rem);
+}
+.answer-xs {
+  font-size: clamp(0.95rem, 4.3vw, 1.5rem);
+}
+.answer-xxs {
+  font-size: clamp(0.85rem, 3.7vw, 1.3rem);
 }
 
 .answer-note {
@@ -431,6 +443,46 @@ button {
 
 :root[data-theme='light'] .btn-grade {
   color: #fff;
+}
+
+/* 選択肢。長い綴りが1行に収まるよう縦積みにし、親指の届く下半分に置く。 */
+.choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-choice {
+  min-height: 58px;
+  padding: 10px 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+  background: var(--surface);
+}
+
+/* 長い綴りでも1行に収まるところまで落とす */
+.choice-xl,
+.choice-lg {
+  font-size: 1.1rem;
+}
+.choice-md {
+  font-size: 1rem;
+}
+.choice-sm {
+  font-size: 0.95rem;
+}
+.choice-xs {
+  font-size: 0.88rem;
+}
+.choice-xxs {
+  font-size: 0.8rem;
+}
+
+.picked {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.85rem;
 }
 
 .typing {

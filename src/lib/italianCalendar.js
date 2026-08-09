@@ -94,9 +94,12 @@ function to12(hour24) {
 }
 
 /** 「Sono le 〜」か「È l'una」か。1時だけ単数形になる。 */
-function hourPhrase(hour12) {
+export function hourPhrase(hour12) {
   return hour12 === 1 ? "È l'una" : `Sono le ${toItalian(hour12)}`;
 }
+
+/** 12時間制の時（1〜12）。誤答の生成でも使う。 */
+export const to12Hour = to12;
 
 /**
  * 時刻のイタリア語表現。

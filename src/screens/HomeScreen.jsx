@@ -41,10 +41,7 @@ export default function HomeScreen({
           )}
         </div>
 
-        <p className="note">
-          問題を見たら、まず声に出す（出せなければ頭の中で）。
-          それから「めくる」で答え合わせ。
-        </p>
+        <p className="note">{modeNote(settings.answerMode)}</p>
       </div>
 
       <div className="actions">
@@ -64,6 +61,16 @@ export default function HomeScreen({
     </div>
   );
 }
+
+const MODE_NOTES = {
+  choice:
+    '選ぶ前に、まず自分で答えを作る。選択肢には「よくある間違い」が混ぜてあります。',
+  reveal:
+    '問題を見たら、まず声に出す（出せなければ頭の中で）。それから「めくる」で答え合わせ。',
+  typing: '綴りを打って答え合わせ。アクセント記号は無くても正解になります。',
+};
+
+const modeNote = (mode) => MODE_NOTES[mode] ?? MODE_NOTES.reveal;
 
 function Metric({ label, value, unit }) {
   return (

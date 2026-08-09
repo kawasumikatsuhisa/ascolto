@@ -9,6 +9,20 @@ const DIRECTIONS = [
 
 const LENGTHS = [10, 20, 30, 50];
 
+const ANSWER_MODES = [
+  {
+    id: 'choice',
+    ja: '選択式',
+    hint: '4つから選ぶ。誤答はその規則のよくある間違い',
+  },
+  {
+    id: 'reveal',
+    ja: 'めくって自己採点',
+    hint: '先に声に出してから答えを見る。産出の練習になる',
+  },
+  { id: 'typing', ja: '入力', hint: '綴りを打って答え合わせ（座れているとき向き）' },
+];
+
 export default function SettingsScreen({ settings, onChange, onBack }) {
   const set = (patch) => onChange({ ...settings, ...patch });
   const toggleCategory = (id) =>
@@ -89,18 +103,28 @@ export default function SettingsScreen({ settings, onChange, onBack }) {
         </section>
 
         <section className="field">
+          <h3>回答方法</h3>
+          <div className="seg seg-col">
+            {ANSWER_MODES.map((m) => (
+              <button
+                key={m.id}
+                className={`seg-btn ${settings.answerMode === m.id ? 'on' : ''}`}
+                onClick={() => set({ answerMode: m.id })}
+              >
+                <span>{m.ja}</span>
+                <span className="seg-sub">{m.hint}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="field">
           <h3>その他</h3>
           <Switch
             label="時刻を24時間制でも出す"
             sub="Sono le quattordici e quarantacinque"
             value={settings.officialTime}
             onChange={(v) => set({ officialTime: v })}
-          />
-          <Switch
-            label="入力して答え合わせ"
-            sub="オフなら、めくって自己採点（片手・立ったまま向き）"
-            value={settings.typing}
-            onChange={(v) => set({ typing: v })}
           />
           <Switch
             label="答えを自動で読み上げる"
