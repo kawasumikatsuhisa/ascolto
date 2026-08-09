@@ -3,6 +3,7 @@ import { CATEGORIES } from '../lib/generator.js';
 import { matches } from '../lib/italianNumbers.js';
 import { speak, speechSupported } from '../lib/speech.js';
 import { topicById } from '../lib/vocabulary.js';
+import { resolveAnswerMode } from '../lib/answerMode.js';
 
 const categoryLabel = (id) => CATEGORIES.find((c) => c.id === id)?.ja ?? id;
 
@@ -54,13 +55,7 @@ export default function DrillScreen({
   const { item, revealed, done, target, finished } = session;
   const inputRef = useRef(null);
 
-  const hasChoices = (item.choices?.length ?? 0) > 1;
-  const mode =
-    settings.answerMode === 'choice' && hasChoices
-      ? 'choice'
-      : settings.answerMode === 'typing' && !item.reverse
-        ? 'typing'
-        : 'reveal';
+  const mode = resolveAnswerMode(settings, item);
 
   // 選択肢は「いちばん長いもの」に合わせて全部を同じ大きさにする。
   // ボタンごとに文字サイズが変わると、長さがヒントになってしまう。
@@ -242,12 +237,13 @@ export default function DrillScreen({
               value={session.input}
               onChange={(e) => onInput(e.target.value)}
               placeholder="イタリア語で入力"
+              // 予測変換・自動修正はあえて有効のまま。長いイタリア語を
+              // 電車で打つのに候補が出ないとつらい。綴りの照合は
+              // matches() が大文字小文字とアクセントを吸収する。
+              lang="it"
               autoComplete="off"
               autoCapitalize="off"
-              autoCorrect="off"
-              spellCheck="false"
-              inputMode={item.numericAnswer ? 'numeric' : 'text'}
-              // iOS はキーボードを出すときにページ自体をずらすことがある
+              inputMode={item.inputMode ?? 'text'}
               onFocus={() => window.scrollTo(0, 0)}
             />
             <button className="btn btn-primary btn-tall" type="submit">

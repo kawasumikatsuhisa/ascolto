@@ -149,6 +149,8 @@ export function normalize(text) {
     .replace(/[\u0300-\u036f]/g, '') // 結合ダイアクリティカルマークを除去
     .toLowerCase()
     .replace(/['’`]/g, '')
+    // 時計表記のコロンは端末によって打ちにくいので、14:45 でも 1445 でも通す
+    .replace(/[:：]/g, '')
     .replace(/\s+/g, '')
     .trim();
 }

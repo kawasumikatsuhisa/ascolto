@@ -37,24 +37,40 @@ export default function App() {
     document.documentElement.dataset.theme = settings.theme;
   }, [settings.theme]);
 
-  // ソフトキーボードが出ると表示領域が縮む。dvh はこれに追随しないので
-  // （特に iOS）、visualViewport の高さをそのまま CSS 変数に入れる。
-  // これがないと、入力中に問題文が画面の外へ押し出される。
+  // ソフトキーボードが出ると表示領域が縮む。dvh はこれに追随しない。
+  //
+  // さらに iOS Safari は、キーボードを出すときにレイアウト側を勝手に
+  // スクロールさせる。高さを合わせるだけでは画面がずれたままになるので、
+  // 実際に見えている領域（visualViewport）に本体を貼りつける:
+  //   height = visualViewport.height
+  //   translateY = visualViewport.offsetTop（ずらされた分を戻す）
+  // 画面本体は position: fixed にしてあるので、これで常に見えている範囲に収まる。
   useEffect(() => {
     const viewport = window.visualViewport;
-    if (!viewport) return undefined;
+    const root = document.documentElement;
 
+    if (!viewport) {
+      // 未対応のブラウザは CSS の 100dvh にまかせる
+      return undefined;
+    }
+
+    let frame = 0;
     const apply = () => {
-      document.documentElement.style.setProperty(
-        '--app-height',
-        `${viewport.height}px`,
-      );
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        root.style.setProperty('--app-height', `${viewport.height}px`);
+        root.style.setProperty('--app-offset', `${viewport.offsetTop}px`);
+        // ずらされたレイアウト側を戻す。これをしないと、キーボードを
+        // 閉じたあとに上部が隠れたままになることがある。
+        if (window.scrollY !== 0) window.scrollTo(0, 0);
+      });
     };
 
     apply();
     viewport.addEventListener('resize', apply);
     viewport.addEventListener('scroll', apply);
     return () => {
+      cancelAnimationFrame(frame);
       viewport.removeEventListener('resize', apply);
       viewport.removeEventListener('scroll', apply);
     };

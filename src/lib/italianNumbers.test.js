@@ -339,6 +339,13 @@ describe('normalize / matches', () => {
     expect(matches('VENTITRÉ', toItalian(23))).toBe(true);
   });
 
+  it('時計表記のコロンを無視する（1445 でも 14:45 でも通す）', () => {
+    expect(matches('1445', '14:45')).toBe(true);
+    expect(matches('14:45', '14:45')).toBe(true);
+    expect(matches('0905', '09:05')).toBe(true);
+    expect(matches('1345', '14:45')).toBe(false);
+  });
+
   it('前後の空白とアポストロフィを無視する', () => {
     expect(matches('  centotto  ', 'centotto')).toBe(true);
     expect(matches("Sono le 3 e mezza", 'sono le 3 e mezza')).toBe(true);

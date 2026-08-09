@@ -121,7 +121,8 @@ function makeNumberItem(settings, rng) {
     answer: reverse ? String(n) : word,
     answerNote: hintFor(tags),
     speech: word,
-    numericAnswer: reverse,
+    answerLang: reverse ? 'num' : 'it',
+    inputMode: reverse ? 'numeric' : 'text',
     tags,
   };
 }
@@ -151,7 +152,9 @@ function makeTimeItem(settings, rng) {
     answer: reverse ? clock : phrase,
     answerNote: hintFor(tags),
     speech: phrase,
-    numericAnswer: reverse,
+    // 14:45 のコロンは数字キーボードに無いので、時刻は文字キーボードで打たせる
+    answerLang: reverse ? 'num' : 'it',
+    inputMode: 'text',
     tags,
   };
 }
@@ -173,6 +176,7 @@ function makeDateItem(settings, rng) {
       prompt: `${year}年`,
       promptNote: '年号をイタリア語で言う',
       answer: toItalian(year),
+      answerLang: 'it',
       answerNote: hintFor(tags),
       speech: toItalian(year),
       tags,
@@ -195,6 +199,7 @@ function makeDateItem(settings, rng) {
       prompt: `${month}月${day}日(${WEEKDAYS[weekday].jaShort})`,
       promptNote: '曜日から続けて言う',
       answer: dateToItalian(month, day, { weekday }),
+      answerLang: 'it',
       answerNote: hintFor(tags) ?? '曜日を前に置くときは冠詞をつけない',
       speech: dateToItalian(month, day, { weekday }),
       tags,
@@ -212,6 +217,7 @@ function makeDateItem(settings, rng) {
     prompt: `${month}月${day}日`,
     promptNote: '冠詞をつけて言う',
     answer: dateToItalian(month, day),
+    answerLang: 'it',
     answerNote: hintFor(tags),
     speech: dateToItalian(month, day),
     tags,
@@ -237,6 +243,7 @@ function makeWeekdayItem(settings, rng) {
       answer: next.it,
       answerNote: next.ja,
       speech: next.it,
+      answerLang: 'it',
       tags: [`weekday:${next.it}`, 'weekday:sequenza'],
     };
   }
@@ -252,6 +259,7 @@ function makeWeekdayItem(settings, rng) {
     answer: reverse ? w.ja : w.it,
     answerNote: null,
     speech: w.it,
+    answerLang: reverse ? 'ja' : 'it',
     tags: [`weekday:${w.it}`],
   };
 }
@@ -273,6 +281,7 @@ function makeMonthItem(settings, rng) {
       answer: next.it,
       answerNote: next.ja,
       speech: next.it,
+      answerLang: 'it',
       tags: [`month:${next.it}`, 'month:sequenza'],
     };
   }
@@ -288,6 +297,7 @@ function makeMonthItem(settings, rng) {
     answer: reverse ? m.ja : m.it,
     answerNote: null,
     speech: m.it,
+    answerLang: reverse ? 'ja' : 'it',
     tags: [`month:${m.it}`],
   };
 }
@@ -317,6 +327,7 @@ function makeWordItem(settings, rng) {
     answer: reverse ? entry.ja : entry.it,
     answerNote: entry.note ?? null,
     speech: entry.it,
+    answerLang: reverse ? 'ja' : 'it',
     // 話題ごとの成績と、単語ごとの成績の両方を取る
     tags: [`word:${topicId}`, `word:${topicId}:${index}`],
   };

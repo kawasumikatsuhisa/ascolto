@@ -43,6 +43,8 @@ html,
 body,
 #root {
   height: 100%;
+  /* 画面本体を visualViewport に貼りつけるので、ページ自体はスクロールさせない */
+  overflow: hidden;
 }
 
 body {
@@ -73,8 +75,13 @@ button {
 .screen {
   display: flex;
   flex-direction: column;
-  /* --app-height はキーボードが出ている間の実際の表示領域（App.jsx が
-     visualViewport から入れる）。無ければ 100dvh に落ちる。 */
+  /* --app-height / --app-offset はキーボードが出ている間の実際の表示領域
+     （App.jsx が visualViewport から入れる）。無ければ 100dvh に落ちる。 */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  transform: translateY(var(--app-offset, 0px));
   height: var(--app-height, 100dvh);
   max-width: 560px;
   margin: 0 auto;
