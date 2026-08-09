@@ -164,6 +164,61 @@ export const TOPICS = [
       { it: 'il derby', ja: 'ダービー' },
       { it: 'forza!', ja: 'がんばれ！' },
       { it: 'dai!', ja: 'いけ！、ほら！' },
+
+      // 人
+      { it: 'il giocatore', ja: '選手' },
+      { it: 'il capitano', ja: 'キャプテン' },
+      { it: 'la riserva', ja: '控え選手' },
+      { it: 'il bomber', ja: '点取り屋', note: '決定力のある FW を指す口語' },
+      { it: 'il guardalinee', ja: '線審', note: '正式には assistente arbitrale' },
+      {
+        it: 'la Nazionale',
+        ja: '代表チーム',
+        note: 'イタリア代表の愛称は gli Azzurri',
+      },
+
+      // プレー
+      { it: 'il passaggio', ja: 'パス' },
+      { it: 'il tiro', ja: 'シュート' },
+      { it: 'il cross', ja: 'クロス' },
+      { it: 'il colpo di testa', ja: 'ヘディング' },
+      { it: 'la rovesciata', ja: 'オーバーヘッドキック' },
+      { it: 'il dribbling', ja: 'ドリブル' },
+      { it: 'la parata', ja: 'セーブ', note: 'portiere がシュートを止めること' },
+      { it: 'il contropiede', ja: 'カウンター' },
+      { it: 'il possesso palla', ja: 'ボール支配率' },
+      { it: 'il palo', ja: 'ゴールポスト' },
+      { it: 'la traversa', ja: 'クロスバー' },
+      { it: 'la rete', ja: 'ゴールネット', note: '実況では得点そのものも rete と言う' },
+      { it: "l'autogol", ja: 'オウンゴール' },
+
+      // 試合の流れ
+      { it: "il calcio d'inizio", ja: 'キックオフ' },
+      { it: 'il tempo supplementare', ja: '延長戦' },
+      { it: 'i rigori', ja: 'PK戦', note: '延長でも決まらないときの決着' },
+      { it: "l'ammonizione", ja: '警告', note: 'カードそのものは cartellino' },
+      { it: "l'espulsione", ja: '退場' },
+      { it: "l'infortunio", ja: 'けが' },
+      { it: 'la sostituzione', ja: '選手交代' },
+      { it: 'il VAR', ja: 'ビデオ判定' },
+      { it: 'il fischio', ja: 'ホイッスル' },
+
+      // リーグと順位
+      { it: 'la Serie A', ja: 'セリエA' },
+      { it: 'lo scudetto', ja: 'リーグ優勝', note: '優勝チームが翌季つける盾の印' },
+      { it: 'la retrocessione', ja: '降格' },
+      { it: 'la promozione', ja: '昇格' },
+      { it: 'il girone', ja: 'グループリーグ' },
+      { it: 'la trasferta', ja: 'アウェー' },
+      { it: 'in casa', ja: 'ホームで' },
+      { it: 'il punteggio', ja: 'スコア' },
+      { it: 'i punti', ja: '勝ち点' },
+
+      // スタジアムで
+      { it: 'la curva', ja: 'ゴール裏', note: '熱心なサポーターが陣取る席' },
+      { it: 'il coro', ja: 'チャント' },
+      { it: 'lo striscione', ja: '横断幕' },
+      { it: 'che gol!', ja: 'なんてゴールだ！' },
     ],
   },
 ];

@@ -73,7 +73,7 @@ Space でめくって 1/2/3 で採点。どちらも S で読み上げ。
 | あいさつ | 29 | ciao / prego / in bocca al lupo |
 | バール・食事 | 30 | un caffè / il conto / al banco |
 | 電車・移動 | 30 | il binario / in ritardo / convalidare |
-| カルチョ | 34 | il rigore / il fuorigioco / Forza! |
+| カルチョ | 75 | il rigore / il contropiede / lo scudetto |
 
 イタリア語側には冠詞をつけてあります（`il calcio` / `la partita`）。名詞の性は
 まとめて覚えるほうが早く、口に出すときも冠詞ごと出てくるためです。
@@ -84,6 +84,10 @@ Space でめくって 1/2/3 で採点。どちらも S で読み上げ。
 
 **選択肢の誤答は必ず同じ話題の中から採ります。** 話題をまたぐと、`ciao` の誤答が
 `il portiere` のようになって、意味を知らなくても消去法で当たってしまうためです。
+
+間違えたときは、選んだ語の意味も一緒に出ます（`選んだのは l'infortunio（けが）`）。
+`l'ammonizione`（警告）と `il cartellino giallo`（イエローカード）のように意味が
+近い語では、正解を見せるだけでは何が違ったのか分からないためです。
 
 語を足すときは `src/lib/vocabulary.js` の該当する話題に
 `{ it, ja, note? }` を追加するだけです。話題ごと足す場合は `TOPICS` に

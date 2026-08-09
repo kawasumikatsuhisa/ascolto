@@ -1,7 +1,8 @@
-import { Fragment, useEffect, useRef } from 'react';
+import { Fragment, useEffect, useMemo, useRef } from 'react';
 import { CATEGORIES } from '../lib/generator.js';
 import { matches } from '../lib/italianNumbers.js';
 import { speak, speechSupported } from '../lib/speech.js';
+import { topicById } from '../lib/vocabulary.js';
 
 const categoryLabel = (id) => CATEGORIES.find((c) => c.id === id)?.ja ?? id;
 
@@ -66,6 +67,18 @@ export default function DrillScreen({
   const choiceSize = sizeClass(
     (item.choices ?? []).reduce((a, b) => (a.length >= b.length ? a : b), ''),
   );
+
+  // 単語で間違えたとき、選んだ語が何だったのかを添える。
+  // ammonizione と cartellino giallo のように意味の近い語では、
+  // 正解を見せるだけでは「なぜ違うのか」が分からないため。
+  const pickedMeaning = useMemo(() => {
+    if (item.source?.kind !== 'word' || !session.picked) return null;
+    const entry = topicById(item.source.topic)?.entries.find(
+      (e) => (item.reverse ? e.ja : e.it) === session.picked,
+    );
+    if (!entry) return null;
+    return item.reverse ? entry.it : entry.ja;
+  }, [item, session.picked]);
 
   const say = () => speak(item.speech, settings.speechRate);
 
@@ -180,6 +193,7 @@ export default function DrillScreen({
             {!session.checked && session.picked && (
               <p className="picked">
                 選んだのは <Wrapped text={session.picked} />
+                {pickedMeaning && `（${pickedMeaning}）`}
               </p>
             )}
             <p className={`answer answer-${sizeClass(item.answer)}`}>
