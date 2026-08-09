@@ -37,6 +37,29 @@ export default function App() {
     document.documentElement.dataset.theme = settings.theme;
   }, [settings.theme]);
 
+  // ソフトキーボードが出ると表示領域が縮む。dvh はこれに追随しないので
+  // （特に iOS）、visualViewport の高さをそのまま CSS 変数に入れる。
+  // これがないと、入力中に問題文が画面の外へ押し出される。
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return undefined;
+
+    const apply = () => {
+      document.documentElement.style.setProperty(
+        '--app-height',
+        `${viewport.height}px`,
+      );
+    };
+
+    apply();
+    viewport.addEventListener('resize', apply);
+    viewport.addEventListener('scroll', apply);
+    return () => {
+      viewport.removeEventListener('resize', apply);
+      viewport.removeEventListener('scroll', apply);
+    };
+  }, []);
+
   const nextItem = useCallback(
     (currentStats, queue, done, recent) => {
       const dueIndex = queue.findIndex((entry) => entry.dueAt <= done);

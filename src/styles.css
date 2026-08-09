@@ -73,7 +73,9 @@ button {
 .screen {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  /* --app-height はキーボードが出ている間の実際の表示領域（App.jsx が
+     visualViewport から入れる）。無ければ 100dvh に落ちる。 */
+  height: var(--app-height, 100dvh);
   max-width: 560px;
   margin: 0 auto;
   padding: max(12px, env(safe-area-inset-top)) 16px
@@ -313,18 +315,31 @@ button {
   background: var(--surface);
 }
 
+/*
+ * 問題カードは中身の高さだけを取る。画面いっぱいに広げると、問題文の
+ * まわりが無駄に空くうえ、キーボードが出たときに問題が押し出される。
+ * 上下の auto マージンで、余った領域の中央に浮かせる。
+ */
 .card {
-  flex: 1;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  margin: auto 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 20px 12px;
+  gap: 12px;
+  padding: 18px 14px;
   border-radius: var(--radius);
   background: var(--surface);
   text-align: center;
   overflow-y: auto;
+}
+
+/* カードが余白を吸うので、操作列は自然に最下部へ落ちる */
+.card ~ .actions {
+  margin-top: 0;
 }
 
 .prompt-note {

@@ -233,6 +233,8 @@ export default function DrillScreen({
               autoCorrect="off"
               spellCheck="false"
               inputMode={item.numericAnswer ? 'numeric' : 'text'}
+              // iOS はキーボードを出すときにページ自体をずらすことがある
+              onFocus={() => window.scrollTo(0, 0)}
             />
             <button className="btn btn-primary btn-tall" type="submit">
               答え合わせ
