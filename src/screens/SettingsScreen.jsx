@@ -1,4 +1,5 @@
 import { CATEGORIES, NUMBER_RANGES } from '../lib/generator.js';
+import { TOPICS } from '../lib/vocabulary.js';
 import { hasItalianVoice, speak, speechSupported } from '../lib/speech.js';
 
 const DIRECTIONS = [
@@ -29,6 +30,8 @@ export default function SettingsScreen({ settings, onChange, onBack }) {
     set({
       categories: { ...settings.categories, [id]: !settings.categories[id] },
     });
+  const toggleTopic = (id) =>
+    set({ topics: { ...settings.topics, [id]: !settings.topics[id] } });
 
   return (
     <div className="screen">
@@ -55,6 +58,27 @@ export default function SettingsScreen({ settings, onChange, onBack }) {
             ))}
           </div>
         </section>
+
+        {settings.categories.words && (
+          <section className="field">
+            <h3>単語の話題</h3>
+            <div className="toggle-grid">
+              {TOPICS.map((t) => (
+                <button
+                  key={t.id}
+                  className={`toggle ${settings.topics[t.id] ? 'on' : ''}`}
+                  onClick={() => toggleTopic(t.id)}
+                >
+                  <span className="toggle-main">
+                    {t.ja}
+                    <span className="toggle-count">{t.entries.length}語</span>
+                  </span>
+                  <span className="toggle-sub">{t.hint}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="field">
           <h3>数字の範囲</h3>

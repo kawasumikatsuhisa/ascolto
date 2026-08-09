@@ -1,4 +1,5 @@
 import { CATEGORIES, NUMBER_RANGES } from '../lib/generator.js';
+import { TOPICS } from '../lib/vocabulary.js';
 
 export default function HomeScreen({
   settings,
@@ -10,6 +11,15 @@ export default function HomeScreen({
 }) {
   const enabled = CATEGORIES.filter((c) => settings.categories[c.id]);
   const range = NUMBER_RANGES.find((r) => r.id === settings.numberRange);
+  const topics = TOPICS.filter((t) => settings.topics?.[t.id]);
+
+  const chipLabel = (c) => {
+    if (c.id === 'numbers' && range) return `${c.ja} ${range.ja}`;
+    if (c.id === 'words' && topics.length) {
+      return `${c.ja}（${topics.map((t) => t.ja).join('・')}）`;
+    }
+    return c.ja;
+  };
 
   return (
     <div className="screen">
@@ -32,8 +42,7 @@ export default function HomeScreen({
         <div className="chips">
           {enabled.map((c) => (
             <span className="chip" key={c.id}>
-              {c.ja}
-              {c.id === 'numbers' && range ? ` ${range.ja}` : ''}
+              {chipLabel(c)}
             </span>
           ))}
           {enabled.length === 0 && (

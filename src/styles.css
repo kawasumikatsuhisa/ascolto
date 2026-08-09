@@ -571,7 +571,16 @@ button {
 }
 
 .toggle-main {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   font-weight: 600;
+}
+
+.toggle-count {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-dim);
 }
 
 .toggle-sub {
@@ -697,9 +706,18 @@ button {
 }
 
 .stat-group h3 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
   margin: 0 0 2px;
   font-size: 0.85rem;
   color: var(--text-dim);
+}
+
+.stat-more {
+  font-size: 0.72rem;
+  font-weight: 400;
 }
 
 .stat-row {

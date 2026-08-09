@@ -14,6 +14,14 @@ export const DEFAULT_SETTINGS = {
     date: true,
     weekday: true,
     month: true,
+    words: true,
+  },
+  // 単語カテゴリで出す話題
+  topics: {
+    saluti: true,
+    bar: true,
+    treno: true,
+    calcio: true,
   },
   numberRange: 'r100',
   direction: 'both', // production | recognition | both
@@ -58,6 +66,7 @@ export const loadSettings = () => {
     ...DEFAULT_SETTINGS,
     ...stored,
     categories: { ...DEFAULT_SETTINGS.categories, ...(stored.categories ?? {}) },
+    topics: { ...DEFAULT_SETTINGS.topics, ...(stored.topics ?? {}) },
   };
 
   // 旧版の typing フラグから answerMode へ移行する

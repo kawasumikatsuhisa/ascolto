@@ -12,6 +12,7 @@
 
 import { toItalian, featureTags } from './italianNumbers.js';
 import { buildChoices } from './choices.js';
+import { TOPICS, TOPIC_IDS, topicById } from './vocabulary.js';
 import {
   WEEKDAYS,
   MONTHS,
@@ -29,7 +30,10 @@ export const CATEGORIES = [
   { id: 'date', ja: '日付', hint: 'il primo 〜' },
   { id: 'weekday', ja: '曜日', hint: 'lunedì 〜' },
   { id: 'month', ja: '月', hint: 'gennaio 〜' },
+  { id: 'words', ja: '単語', hint: 'あいさつ / カルチョ' },
 ];
+
+export { TOPICS, TOPIC_IDS } from './vocabulary.js';
 
 export const NUMBER_RANGES = [
   { id: 'r20', ja: '0〜20', min: 0, max: 20 },
@@ -288,6 +292,36 @@ function makeMonthItem(settings, rng) {
   };
 }
 
+// ---------------------------------------------------------------- 単語
+
+/** 有効になっている話題。全部オフなら最初の話題に落とす。 */
+function activeTopics(settings) {
+  const list = TOPIC_IDS.filter((id) => settings.topics?.[id]);
+  return list.length ? list : [TOPIC_IDS[0]];
+}
+
+function makeWordItem(settings, rng) {
+  const topicId = pick(activeTopics(settings), rng);
+  const topic = topicById(topicId);
+  const index = randInt(0, topic.entries.length - 1, rng);
+  const entry = topic.entries[index];
+  const reverse = wantsReverse(settings, rng);
+
+  return {
+    key: `word:${topicId}:${index}:${reverse ? 'r' : 'p'}`,
+    category: 'words',
+    source: { kind: 'word', topic: topicId, index },
+    reverse,
+    prompt: reverse ? entry.it : entry.ja,
+    promptNote: `${topic.ja} · ${reverse ? '日本語で' : 'イタリア語で言う'}`,
+    answer: reverse ? entry.ja : entry.it,
+    answerNote: entry.note ?? null,
+    speech: entry.it,
+    // 話題ごとの成績と、単語ごとの成績の両方を取る
+    tags: [`word:${topicId}`, `word:${topicId}:${index}`],
+  };
+}
+
 /** 逆向き（イタリア語 -> 日本語/数字）を出すかどうか */
 function wantsReverse(settings, rng) {
   if (settings.direction === 'production') return false;
@@ -301,6 +335,7 @@ const BUILDERS = {
   date: makeDateItem,
   weekday: makeWeekdayItem,
   month: makeMonthItem,
+  words: makeWordItem,
 };
 
 /** 有効になっているカテゴリ。全部オフなら数字にフォールバックする。 */
@@ -381,12 +416,23 @@ export function describeTag(tag) {
   if (group === 'date' && rest.startsWith('num-')) {
     return `日にちの数字（${rest.slice(4)}）`;
   }
+  if (group === 'word') {
+    const [topicId, index] = rest.split(':');
+    const topic = topicById(topicId);
+    if (!topic) return rest;
+    // 話題そのもののタグか、単語ごとのタグか
+    return index === undefined ? `${topic.ja}（全体）` : topic.entries[Number(index)].it;
+  }
   return rest;
 }
 
 /** タグのグループ（成績画面の見出し） */
 export function tagGroup(tag) {
   const group = tag.split(':')[0];
+  if (group === 'word') {
+    const topic = topicById(tag.split(':')[1]);
+    return topic ? `単語 · ${topic.ja}` : '単語';
+  }
   return (
     { num: '数字', time: '時刻', date: '日付', weekday: '曜日', month: '月' }[
       group

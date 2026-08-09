@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { describeTag, tagGroup } from '../lib/generator.js';
 
+/** 単語は項目数が多いので、グループごとに苦手な順で上位だけ出す */
+const ROWS_PER_GROUP = 12;
+
 export default function StatsScreen({ stats, progress, accuracy, onBack, onReset }) {
   const [confirming, setConfirming] = useState(false);
 
@@ -74,8 +77,15 @@ export default function StatsScreen({ stats, progress, accuracy, onBack, onReset
 
         {groups.map(([group, rows]) => (
           <section className="stat-group" key={group}>
-            <h3>{group}</h3>
-            {rows.map((row) => (
+            <h3>
+              {group}
+              {rows.length > ROWS_PER_GROUP && (
+                <span className="stat-more">
+                  苦手な{ROWS_PER_GROUP}件 / 全{rows.length}件
+                </span>
+              )}
+            </h3>
+            {rows.slice(0, ROWS_PER_GROUP).map((row) => (
               <div className="stat-row" key={row.tag}>
                 <div className="stat-label">{row.label}</div>
                 <div className="stat-bar">

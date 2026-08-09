@@ -28,6 +28,7 @@ import {
   to12Hour,
   formatClock,
 } from './italianCalendar.js';
+import { topicById } from './vocabulary.js';
 
 export const CHOICE_COUNT = 4;
 
@@ -231,9 +232,20 @@ function cycleDistractors(list, index, key) {
   return [at(1), at(-1), at(2), at(-2), at(3)];
 }
 
+/**
+ * 単語の誤答は必ず同じ話題の中から採る。
+ * 話題をまたぐと（ciao の誤答が portiere など）意味を知らなくても
+ * 消去法で当たってしまい、選択式にする意味がなくなる。
+ */
+function wordDistractors({ topic, index }, reverse, rng) {
+  const entries = topicById(topic)?.entries ?? [];
+  const others = entries.filter((_, i) => i !== index);
+  return shuffle(others, rng).map((entry) => (reverse ? entry.ja : entry.it));
+}
+
 // ------------------------------------------------------------------ 本体
 
-function rawDistractors(item) {
+function rawDistractors(item, rng) {
   const source = item.source ?? {};
   switch (source.kind) {
     case 'number':
@@ -248,6 +260,8 @@ function rawDistractors(item) {
       return cycleDistractors(WEEKDAYS, source.index, item.reverse ? 'ja' : 'it');
     case 'month':
       return cycleDistractors(MONTHS, source.index, item.reverse ? 'ja' : 'it');
+    case 'word':
+      return wordDistractors(source, item.reverse, rng);
     default:
       return [];
   }
@@ -272,7 +286,7 @@ export function buildChoices(item, rng = Math.random) {
   const seen = new Set([item.answer]);
   const wrong = [];
 
-  for (const candidate of rawDistractors(item)) {
+  for (const candidate of rawDistractors(item, rng)) {
     const text = asString(candidate);
     if (!text || seen.has(text)) continue;
     seen.add(text);
