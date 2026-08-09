@@ -1,0 +1,78 @@
+import { describe, it, expect } from 'vitest';
+import {
+  applyGrade,
+  rollDailyProgress,
+  todayKey,
+  DEFAULT_PROGRESS,
+} from './storage.js';
+
+describe('applyGrade', () => {
+  it('good は seen だけ増やす', () => {
+    const s = applyGrade({}, ['num:venti'], 'good');
+    expect(s['num:venti']).toEqual({ seen: 1, wrong: 0 });
+  });
+
+  it('again は wrong を1増やす', () => {
+    const s = applyGrade({}, ['num:venti'], 'again');
+    expect(s['num:venti']).toEqual({ seen: 1, wrong: 1 });
+  });
+
+  it('hard は半分だけ間違い扱い', () => {
+    const s = applyGrade({}, ['num:venti'], 'hard');
+    expect(s['num:venti']).toEqual({ seen: 1, wrong: 0.5 });
+  });
+
+  it('タグを複数持つ問題は全タグに反映する', () => {
+    const s = applyGrade({}, ['a', 'b', 'c'], 'again');
+    expect(Object.keys(s)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('元のオブジェクトを壊さない', () => {
+    const before = { a: { seen: 1, wrong: 0 } };
+    const after = applyGrade(before, ['a'], 'again');
+    expect(before.a).toEqual({ seen: 1, wrong: 0 });
+    expect(after.a).toEqual({ seen: 2, wrong: 1 });
+  });
+
+  it('積み重ねても浮動小数の誤差が出ない', () => {
+    let s = {};
+    for (let i = 0; i < 10; i++) s = applyGrade(s, ['a'], 'hard');
+    expect(s.a).toEqual({ seen: 10, wrong: 5 });
+  });
+});
+
+describe('rollDailyProgress', () => {
+  const yesterday = todayKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
+  const longAgo = '2000-01-01';
+
+  it('同じ日なら何もしない', () => {
+    const p = { ...DEFAULT_PROGRESS, day: todayKey(), todayCount: 7, streak: 3 };
+    expect(rollDailyProgress(p)).toBe(p);
+  });
+
+  it('昨日から続いていれば連続日数を保つ', () => {
+    const p = { ...DEFAULT_PROGRESS, day: yesterday, todayCount: 20, streak: 3 };
+    const next = rollDailyProgress(p);
+    expect(next.streak).toBe(3);
+    expect(next.todayCount).toBe(0);
+    expect(next.day).toBe(todayKey());
+  });
+
+  it('日が飛んでいたら連続日数をリセットする', () => {
+    const p = { ...DEFAULT_PROGRESS, day: longAgo, todayCount: 20, streak: 9 };
+    expect(rollDailyProgress(p).streak).toBe(0);
+  });
+
+  it('初回起動でも壊れない', () => {
+    const next = rollDailyProgress(DEFAULT_PROGRESS);
+    expect(next.streak).toBe(0);
+    expect(next.day).toBe(todayKey());
+  });
+});
+
+describe('todayKey', () => {
+  it('YYYY-MM-DD 形式でゼロ埋めする', () => {
+    expect(todayKey(new Date(2026, 0, 5))).toBe('2026-01-05');
+    expect(todayKey(new Date(2026, 11, 31))).toBe('2026-12-31');
+  });
+});
