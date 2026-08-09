@@ -102,10 +102,10 @@ export default function DrillScreen({
       if (!revealed && (e.code === 'Space' || e.code === 'Enter')) {
         e.preventDefault();
         onReveal();
-      } else if (revealed && mode === 'choice' && (e.code === 'Space' || e.code === 'Enter')) {
+      } else if (revealed && mode !== 'reveal' && (e.code === 'Space' || e.code === 'Enter')) {
         e.preventDefault();
         onGrade(session.checked ? 'good' : 'again');
-      } else if (revealed && ['Digit1', 'Digit2', 'Digit3'].includes(e.code)) {
+      } else if (revealed && mode === 'reveal' && ['Digit1', 'Digit2', 'Digit3'].includes(e.code)) {
         e.preventDefault();
         onGrade(['again', 'hard', 'good'][Number(e.code.slice(-1)) - 1]);
       } else if (e.code === 'KeyS') {
@@ -185,10 +185,17 @@ export default function DrillScreen({
                 {session.checked ? '正解' : '不正解'}
               </p>
             )}
-            {!session.checked && session.picked && (
+            {session.checked === false && mode !== 'reveal' && (
               <p className="picked">
-                選んだのは <Wrapped text={session.picked} />
-                {pickedMeaning && `（${pickedMeaning}）`}
+                {mode === 'typing' ? '入力したのは ' : '選んだのは '}
+                {session.picked ? (
+                  <>
+                    <Wrapped text={session.picked} />
+                    {pickedMeaning && `（${pickedMeaning}）`}
+                  </>
+                ) : (
+                  '（未入力）'
+                )}
               </p>
             )}
             <p className={`answer answer-${sizeClass(item.answer)}`}>
@@ -220,14 +227,6 @@ export default function DrillScreen({
           </div>
         )}
 
-        {mode === 'choice' && revealed && (
-          <button
-            className="btn btn-primary btn-tall"
-            onClick={() => onGrade(session.checked ? 'good' : 'again')}
-          >
-            次へ
-          </button>
-        )}
 
         {mode === 'typing' && !revealed && (
           <form className="typing" onSubmit={submitTyping}>
@@ -259,7 +258,18 @@ export default function DrillScreen({
           </button>
         )}
 
-        {mode !== 'choice' && revealed && (
+        {/* 選択式・入力は答え合わせで正誤が確定しているので、自己採点は出さない */}
+        {revealed && mode !== 'reveal' && (
+          <button
+            className="btn btn-primary btn-tall"
+            onClick={() => onGrade(session.checked ? 'good' : 'again')}
+          >
+            次へ
+          </button>
+        )}
+
+        {/* めくる方式だけが自己採点 */}
+        {revealed && mode === 'reveal' && (
           <div className="grade-row">
             <button
               className="btn btn-grade btn-again"
