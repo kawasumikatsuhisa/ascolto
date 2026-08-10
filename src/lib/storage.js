@@ -21,6 +21,8 @@ export const DEFAULT_SETTINGS = {
     saluti: true,
     bar: true,
     treno: true,
+    negozio: true,
+    famiglia: true,
     calcio: true,
   },
   numberRange: 'r100',

@@ -68,7 +68,7 @@ PC で使うときは、選択式なら 1〜4 で選んで Space で次へ。入
 | 日付 | `3月8日` → l'otto marzo / `1999年` → millenovecentonovantanove |
 | 曜日 | `木曜日` → giovedì / `mercoledì の次は？` → giovedì |
 | 月 | `9月` → settembre / `giugno` → 6月 |
-| 単語 | `片道` → solo andata / `il rigore` → PK |
+| 単語 | `片道` → solo andata / `il rigore` → PK（6話題・447語） |
 
 向きは「日本語 → 伊」「両方」「伊 → 日本語」から選べます。既定は両方（産出が主）。
 
@@ -78,10 +78,14 @@ PC で使うときは、選択式なら 1〜4 で選んで Space で次へ。入
 
 | 話題 | 語数 | 例 |
 | --- | --- | --- |
-| あいさつ | 29 | ciao / prego / in bocca al lupo |
-| バール・食事 | 30 | un caffè / il conto / al banco |
-| 電車・移動 | 30 | il binario / in ritardo / convalidare |
+| あいさつ | 73 | ciao / prego / in bocca al lupo / meno male |
+| バール・食事 | 74 | un caffè / il conto / al banco / il coperto |
+| 電車・移動 | 74 | il binario / in ritardo / convalidare / sempre dritto |
+| 買い物 | 76 | quant'è? / lo sconto / il camerino / il tabaccaio |
+| 家族 | 75 | la sorella / i nonni / il cognato / quanti anni hai? |
 | カルチョ | 75 | il rigore / il contropiede / lo scudetto |
+
+合計447語。うち49語には注記が付きます。
 
 イタリア語側には冠詞をつけてあります（`il calcio` / `la partita`）。名詞の性は
 まとめて覚えるほうが早く、口に出すときも冠詞ごと出てくるためです。
