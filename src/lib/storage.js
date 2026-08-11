@@ -23,6 +23,12 @@ export const DEFAULT_SETTINGS = {
     treno: true,
     negozio: true,
     famiglia: true,
+    tempo: true,
+    salute: true,
+    viaggio: true,
+    lavoro: true,
+    informatica: true,
+    cultura: true,
     calcio: true,
   },
   numberRange: 'r100',
@@ -39,9 +45,12 @@ export const DEFAULT_SETTINGS = {
 export const DEFAULT_PROGRESS = {
   day: null, // YYYY-MM-DD
   todayCount: 0,
-  streak: 0,
+  todayCorrect: 0,
+  streak: 0, // 連続日数
   total: 0,
   correct: 0,
+  combo: 0, // 連続正解（いま続いている数）
+  bestCombo: 0, // 連続正解の最高記録
 };
 
 function read(key, fallback) {
@@ -84,7 +93,18 @@ export const saveSettings = (v) => write('settings', v);
 export const loadStats = () => read('stats', {});
 export const saveStats = (v) => write('stats', v);
 
-export const loadProgress = () => ({ ...DEFAULT_PROGRESS, ...read('progress', {}) });
+export const loadProgress = () => {
+  const stored = read('progress', {});
+  const progress = { ...DEFAULT_PROGRESS, ...stored };
+
+  // 旧版には todayCorrect が無い。そのまま 0 にすると、その日の正答率が
+  // 0% と表示されてしまうので、今日の集計だけ取り直す（通算はそのまま）。
+  if (stored.todayCount > 0 && stored.todayCorrect === undefined) {
+    progress.todayCount = 0;
+    progress.todayCorrect = 0;
+  }
+  return progress;
+};
 export const saveProgress = (v) => write('progress', v);
 
 export function clearAll() {
@@ -111,7 +131,33 @@ export function rollDailyProgress(progress, today = todayKey()) {
 
   const yesterday = todayKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
   const streak = progress.day === yesterday ? progress.streak : 0;
-  return { ...progress, day: today, todayCount: 0, streak };
+  // 連続正解は日をまたいでも切らさない（正解が続いている限りの数なので）
+  return { ...progress, day: today, todayCount: 0, todayCorrect: 0, streak };
+}
+
+/**
+ * 1問ぶんの結果を進捗に反映する。
+ * @param {object} progress
+ * @param {boolean} isCorrect 「言えた」なら true
+ */
+export function applyResult(progress, isCorrect) {
+  const combo = isCorrect ? progress.combo + 1 : 0;
+  return {
+    ...progress,
+    todayCount: progress.todayCount + 1,
+    todayCorrect: progress.todayCorrect + (isCorrect ? 1 : 0),
+    total: progress.total + 1,
+    correct: progress.correct + (isCorrect ? 1 : 0),
+    combo,
+    bestCombo: Math.max(progress.bestCombo, combo),
+    // その日の1問目を答えた時点で連続日数を伸ばす
+    streak: progress.todayCount === 0 ? progress.streak + 1 : progress.streak,
+  };
+}
+
+/** 正答率（%）。1問も答えていなければ null。 */
+export function accuracyOf(correct, total) {
+  return total > 0 ? Math.round((correct / total) * 100) : null;
 }
 
 /**

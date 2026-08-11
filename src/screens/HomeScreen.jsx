@@ -1,10 +1,10 @@
 import { CATEGORIES, NUMBER_RANGES } from '../lib/generator.js';
 import { TOPICS } from '../lib/vocabulary.js';
+import { accuracyOf } from '../lib/storage.js';
 
 export default function HomeScreen({
   settings,
   progress,
-  accuracy,
   onStart,
   onOpenStats,
   onOpenSettings,
@@ -12,6 +12,8 @@ export default function HomeScreen({
   const enabled = CATEGORIES.filter((c) => settings.categories[c.id]);
   const range = NUMBER_RANGES.find((r) => r.id === settings.numberRange);
   const topics = TOPICS.filter((t) => settings.topics?.[t.id]);
+  const todayAccuracy = accuracyOf(progress.todayCorrect, progress.todayCount);
+  const overallAccuracy = accuracyOf(progress.correct, progress.total);
 
   const chipLabel = (c) => {
     if (c.id === 'numbers' && range) return `${c.ja} ${range.ja}`;
@@ -25,19 +27,27 @@ export default function HomeScreen({
     <div className="screen">
       <header className="home-header">
         <h1 className="logo">ascolto</h1>
-        <p className="tagline">数字・日付・時刻・曜日・月を思い出して言う</p>
+        <p className="tagline">数字・日付・時刻・曜日・月・単語を思い出して言う</p>
       </header>
 
       <div className="home-body">
         <div className="metrics">
           <Metric label="きょう" value={progress.todayCount} unit="問" />
-          <Metric label="連続" value={progress.streak} unit="日" />
           <Metric
-            label="正答率"
-            value={accuracy === null ? '—' : accuracy}
-            unit={accuracy === null ? '' : '%'}
+            label="きょうの正答率"
+            value={todayAccuracy === null ? '—' : todayAccuracy}
+            unit={todayAccuracy === null ? '' : '%'}
           />
+          <Metric label="連続" value={progress.streak} unit="日" />
         </div>
+
+        {progress.bestCombo > 0 && (
+          <p className="note">
+            連続正解 <strong>{progress.combo}問</strong>
+            <span className="note-sep">最高 {progress.bestCombo}問</span>
+            <span className="note-sep">通算 {overallAccuracy}%</span>
+          </p>
+        )}
 
         <div className="chips">
           {enabled.map((c) => (

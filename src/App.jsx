@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import HomeScreen from './screens/HomeScreen.jsx';
 import DrillScreen from './screens/DrillScreen.jsx';
 import StatsScreen from './screens/StatsScreen.jsx';
@@ -13,6 +13,7 @@ import {
   saveProgress,
   rollDailyProgress,
   applyGrade,
+  applyResult,
 } from './lib/storage.js';
 import { initSpeech, stopSpeaking } from './lib/speech.js';
 
@@ -105,6 +106,7 @@ export default function App() {
       input: '',
       checked: null,
       picked: null,
+      bestCombo: 0, // このセット内でいちばん続いた正解数
       finished: false,
     });
     setScreen('drill');
@@ -117,20 +119,18 @@ export default function App() {
   const grade = useCallback(
     (value) => {
       stopSpeaking();
+
+      // 進捗は先に確定させる。セット内の最長連続を出すのに新しい値が要るのと、
+      // 日付をまたいだ場合もここで繰り越すため。
+      const isCorrect = value === 'good';
+      const nextProgress = applyResult(rollDailyProgress(progress), isCorrect);
+      setProgress(nextProgress);
+
       setSession((s) => {
         if (!s || s.finished) return s;
 
         const nextStats = applyGrade(stats, s.item.tags, value);
         setStats(nextStats);
-
-        setProgress((p) => ({
-          ...p,
-          todayCount: p.todayCount + 1,
-          total: p.total + 1,
-          correct: p.correct + (value === 'good' ? 1 : 0),
-          // その日の1問目を答えた時点で連続日数を伸ばす
-          streak: p.todayCount === 0 ? p.streak + 1 : p.streak,
-        }));
 
         const done = s.done + 1;
         const queue =
@@ -138,12 +138,15 @@ export default function App() {
             ? s.queue
             : [...s.queue, { item: s.item, dueAt: done + REQUEUE_DELAY[value] }];
 
+        const bestCombo = Math.max(s.bestCombo, nextProgress.combo);
+
         if (done >= s.target) {
           return {
             ...s,
             done,
             good: s.good + (value === 'good' ? 1 : 0),
             queue,
+            bestCombo,
             finished: true,
           };
         }
@@ -158,6 +161,7 @@ export default function App() {
           item: picked.item,
           queue: picked.queue,
           recent: [...recent, picked.item.key].slice(-4),
+          bestCombo,
           revealed: false,
           input: '',
           checked: null,
@@ -165,7 +169,7 @@ export default function App() {
         };
       });
     },
-    [nextItem, stats],
+    [nextItem, progress, stats],
   );
 
   const setInput = useCallback((value) => {
@@ -184,16 +188,12 @@ export default function App() {
     setScreen('home');
   }, []);
 
-  const accuracy = useMemo(
-    () => (progress.total ? Math.round((progress.correct / progress.total) * 100) : null),
-    [progress],
-  );
-
   if (screen === 'drill' && session) {
     return (
       <DrillScreen
         session={session}
         settings={settings}
+        progress={progress}
         onReveal={reveal}
         onGrade={grade}
         onInput={setInput}
@@ -209,7 +209,6 @@ export default function App() {
       <StatsScreen
         stats={stats}
         progress={progress}
-        accuracy={accuracy}
         onBack={() => setScreen('home')}
         onReset={() => setStats({})}
       />
@@ -230,7 +229,6 @@ export default function App() {
     <HomeScreen
       settings={settings}
       progress={progress}
-      accuracy={accuracy}
       onStart={startSession}
       onOpenStats={() => setScreen('stats')}
       onOpenSettings={() => setScreen('settings')}

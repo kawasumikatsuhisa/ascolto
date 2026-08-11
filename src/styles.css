@@ -219,14 +219,15 @@ button {
   gap: 20px;
 }
 
+/* 指標は数が増えても崩れないよう、折り返すグリッドにしてある */
 .metrics {
-  display: flex;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
 }
 
 .metric {
-  flex: 1;
-  padding: 14px 10px;
+  padding: 14px 8px;
   border-radius: var(--radius);
   background: var(--surface);
   text-align: center;
@@ -247,8 +248,20 @@ button {
 
 .metric-label {
   margin-top: 2px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
+  line-height: 1.3;
   color: var(--text-dim);
+}
+
+.note-sep::before {
+  content: '·';
+  margin: 0 6px;
+  opacity: 0.6;
+}
+
+.combo {
+  font-weight: 700;
+  color: var(--good);
 }
 
 .chips {

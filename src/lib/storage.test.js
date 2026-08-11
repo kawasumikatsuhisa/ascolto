@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   applyGrade,
+  applyResult,
+  accuracyOf,
   rollDailyProgress,
   todayKey,
   DEFAULT_PROGRESS,
@@ -74,5 +76,87 @@ describe('todayKey', () => {
   it('YYYY-MM-DD 形式でゼロ埋めする', () => {
     expect(todayKey(new Date(2026, 0, 5))).toBe('2026-01-05');
     expect(todayKey(new Date(2026, 11, 31))).toBe('2026-12-31');
+  });
+});
+
+describe('applyResult', () => {
+  const fresh = { ...DEFAULT_PROGRESS, day: todayKey() };
+
+  it('正解で今日と通算の両方が増える', () => {
+    const p = applyResult(fresh, true);
+    expect(p.todayCount).toBe(1);
+    expect(p.todayCorrect).toBe(1);
+    expect(p.total).toBe(1);
+    expect(p.correct).toBe(1);
+  });
+
+  it('不正解では正解数だけ増えない', () => {
+    const p = applyResult(fresh, false);
+    expect(p.todayCount).toBe(1);
+    expect(p.todayCorrect).toBe(0);
+    expect(p.total).toBe(1);
+    expect(p.correct).toBe(0);
+  });
+
+  it('連続正解が積み上がる', () => {
+    let p = fresh;
+    for (let i = 0; i < 5; i++) p = applyResult(p, true);
+    expect(p.combo).toBe(5);
+    expect(p.bestCombo).toBe(5);
+  });
+
+  it('間違えると連続正解が切れるが、最高記録は残る', () => {
+    let p = fresh;
+    for (let i = 0; i < 7; i++) p = applyResult(p, true);
+    p = applyResult(p, false);
+    expect(p.combo).toBe(0);
+    expect(p.bestCombo).toBe(7);
+
+    for (let i = 0; i < 3; i++) p = applyResult(p, true);
+    expect(p.combo).toBe(3);
+    expect(p.bestCombo).toBe(7); // 更新されない
+  });
+
+  it('元のオブジェクトを壊さない', () => {
+    const before = { ...fresh };
+    applyResult(before, true);
+    expect(before).toEqual(fresh);
+  });
+
+  it('その日の1問目で連続日数が伸びる', () => {
+    const p = applyResult(fresh, true);
+    expect(p.streak).toBe(1);
+    expect(applyResult(p, true).streak).toBe(1); // 2問目では伸びない
+  });
+});
+
+describe('日をまたぐとき', () => {
+  it('今日の集計はリセットされ、通算と連続正解は残る', () => {
+    const yesterday = todayKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
+    let p = { ...DEFAULT_PROGRESS, day: yesterday };
+    for (let i = 0; i < 4; i++) p = applyResult(p, true);
+    expect(p.todayCorrect).toBe(4);
+
+    const rolled = rollDailyProgress(p);
+    expect(rolled.todayCount).toBe(0);
+    expect(rolled.todayCorrect).toBe(0);
+    expect(rolled.total).toBe(4);
+    expect(rolled.correct).toBe(4);
+    // 正解が続いている限りの数なので、日付では切らない
+    expect(rolled.combo).toBe(4);
+    expect(rolled.bestCombo).toBe(4);
+  });
+});
+
+describe('accuracyOf', () => {
+  it('割合を四捨五入して返す', () => {
+    expect(accuracyOf(17, 20)).toBe(85);
+    expect(accuracyOf(1, 3)).toBe(33);
+    expect(accuracyOf(20, 20)).toBe(100);
+    expect(accuracyOf(0, 5)).toBe(0);
+  });
+
+  it('1問も答えていなければ null', () => {
+    expect(accuracyOf(0, 0)).toBeNull();
   });
 });

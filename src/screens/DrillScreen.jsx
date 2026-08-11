@@ -45,6 +45,7 @@ function Wrapped({ text }) {
 export default function DrillScreen({
   session,
   settings,
+  progress,
   onReveal,
   onGrade,
   onInput,
@@ -130,6 +131,13 @@ export default function DrillScreen({
               </div>
               <div className="metric-label">正解</div>
             </div>
+            <div className="metric">
+              <div className="metric-value">
+                {session.bestCombo}
+                <span className="metric-unit">問</span>
+              </div>
+              <div className="metric-label">このセットの最長連続</div>
+            </div>
           </div>
           <p className="note">
             間違えたものは次のセットで多めに出ます。降りる駅まで、もう1セット。
@@ -183,6 +191,10 @@ export default function DrillScreen({
             {session.checked !== null && (
               <p className={`verdict ${session.checked ? 'ok' : 'ng'}`}>
                 {session.checked ? '正解' : '不正解'}
+                {/* 採点は「次へ」で確定するので、いま答えたぶんを足して見せる */}
+                {session.checked && progress.combo + 1 >= 2 && (
+                  <span className="combo"> 連続{progress.combo + 1}問</span>
+                )}
               </p>
             )}
             {session.checked === false && mode !== 'reveal' && (

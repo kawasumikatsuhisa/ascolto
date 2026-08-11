@@ -79,6 +79,28 @@ describe('語彙データ', () => {
     },
   );
 
+  it('話題をまたいで同じ語を持たない', () => {
+    // 同じ語が2つの話題に入ると、成績が別々の行に割れて分かりにくくなる。
+    // 意味が近い語（albergo と camera など）はどちらか一方の話題に置く。
+    const owners = new Map();
+    for (const topic of TOPICS) {
+      for (const entry of topic.entries) {
+        if (!owners.has(entry.it)) owners.set(entry.it, []);
+        owners.get(entry.it).push(topic.id);
+      }
+    }
+    const shared = [...owners]
+      .filter(([, ids]) => ids.length > 1)
+      .map(([word, ids]) => `${word}: ${ids.join(', ')}`);
+    expect(shared).toEqual([]);
+  });
+
+  it('どの話題も選択肢に困らない語数がある', () => {
+    for (const topic of TOPICS) {
+      expect(topic.entries.length).toBeGreaterThanOrEqual(20);
+    }
+  });
+
   it('topicById は未知の id で null を返す', () => {
     expect(topicById('nope')).toBeNull();
     expect(topicSize('nope')).toBe(0);

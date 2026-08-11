@@ -46,6 +46,7 @@
 間違えたものはそのセット内で数問後にもう一度出ます。さらに、どの**規則**（単語なら
 どの語）で間違えたかを記録しているので、次のセットからそこが多く出るようになります。
 
+- 成績は「きょう」と「通算」の正答率、連続日数、連続正解数（と最高記録）を出します
 - 操作するボタンはすべて画面の下（親指の届く範囲）に置いてあります
 - 長い数詞は語の切れ目（〜mila / 〜cento / 十の位）で折り返します
 - 読み上げは既定でオフ。答えの下の「♪ 聞く」を押したときだけ鳴ります
@@ -68,7 +69,7 @@ PC で使うときは、選択式なら 1〜4 で選んで Space で次へ。入
 | 日付 | `3月8日` → l'otto marzo / `1999年` → millenovecentonovantanove |
 | 曜日 | `木曜日` → giovedì / `mercoledì の次は？` → giovedì |
 | 月 | `9月` → settembre / `giugno` → 6月 |
-| 単語 | `片道` → solo andata / `il rigore` → PK（6話題・447語） |
+| 単語 | `片道` → solo andata / `il rigore` → PK（12話題・866語） |
 
 向きは「日本語 → 伊」「両方」「伊 → 日本語」から選べます。既定は両方（産出が主）。
 
@@ -80,12 +81,19 @@ PC で使うときは、選択式なら 1〜4 で選んで Space で次へ。入
 | --- | --- | --- |
 | あいさつ | 73 | ciao / prego / in bocca al lupo / meno male |
 | バール・食事 | 74 | un caffè / il conto / al banco / il coperto |
-| 電車・移動 | 74 | il binario / in ritardo / convalidare / sempre dritto |
+| 電車・移動 | 72 | il binario / in ritardo / convalidare / sempre dritto |
 | 買い物 | 76 | quant'è? / lo sconto / il camerino / il tabaccaio |
-| 家族 | 75 | la sorella / i nonni / il cognato / quanti anni hai? |
+| 家族 | 74 | la sorella / i nonni / il cognato / quanti anni hai? |
+| 天気・季節 | 73 | piove / l'estate / fa caldo / dopodomani |
+| 体調 | 71 | ho mal di testa / la febbre / il pronto soccorso |
+| 旅行 | 70 | la prenotazione / il duomo / ho perso / il cambio |
+| 仕事 | 69 | la riunione / la scadenza / le ferie / la partita IVA |
+| IT | 72 | la password / scaricare / si è bloccato / il cloud |
+| イタリア文化 | 67 | l'aperitivo / la sagra / il Ferragosto / il campanilismo |
 | カルチョ | 75 | il rigore / il contropiede / lo scudetto |
 
-合計447語。うち49語には注記が付きます。
+合計866語。うち多くに注記が付きます。同じ語を2つの話題に入れないことも
+テストで確認しています（成績が別々の行に割れるのを防ぐため）。
 
 イタリア語側には冠詞をつけてあります（`il calcio` / `la partita`）。名詞の性は
 まとめて覚えるほうが早く、口に出すときも冠詞ごと出てくるためです。

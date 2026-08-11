@@ -1,11 +1,15 @@
 import { useMemo, useState } from 'react';
 import { describeTag, isAggregateTag, tagGroup } from '../lib/generator.js';
+import { accuracyOf } from '../lib/storage.js';
 
 /** 単語は項目数が多いので、グループごとに苦手な順で上位だけ出す */
 const ROWS_PER_GROUP = 12;
 
-export default function StatsScreen({ stats, progress, accuracy, onBack, onReset }) {
+export default function StatsScreen({ stats, progress, onBack, onReset }) {
   const [confirming, setConfirming] = useState(false);
+
+  const todayAccuracy = accuracyOf(progress.todayCorrect, progress.todayCount);
+  const overallAccuracy = accuracyOf(progress.correct, progress.total);
 
   const groups = useMemo(() => {
     const rows = Object.entries(stats)
@@ -50,28 +54,27 @@ export default function StatsScreen({ stats, progress, accuracy, onBack, onReset
 
       <div className="scroll-body">
         <div className="metrics">
-          <div className="metric">
-            <div className="metric-value">
-              {progress.total}
-              <span className="metric-unit">問</span>
-            </div>
-            <div className="metric-label">のべ</div>
-          </div>
-          <div className="metric">
-            <div className="metric-value">
-              {accuracy === null ? '—' : accuracy}
-              <span className="metric-unit">{accuracy === null ? '' : '%'}</span>
-            </div>
-            <div className="metric-label">正答率</div>
-          </div>
-          <div className="metric">
-            <div className="metric-value">
-              {progress.streak}
-              <span className="metric-unit">日</span>
-            </div>
-            <div className="metric-label">連続</div>
-          </div>
+          <Metric label="きょう" value={progress.todayCount} unit="問" />
+          <Metric
+            label="きょうの正答率"
+            value={todayAccuracy === null ? '—' : todayAccuracy}
+            unit={todayAccuracy === null ? '' : '%'}
+          />
+          <Metric label="連続" value={progress.streak} unit="日" />
+          <Metric label="のべ" value={progress.total} unit="問" />
+          <Metric
+            label="通算の正答率"
+            value={overallAccuracy === null ? '—' : overallAccuracy}
+            unit={overallAccuracy === null ? '' : '%'}
+          />
+          <Metric label="連続正解" value={progress.combo} unit="問" />
         </div>
+
+        {progress.bestCombo > 0 && (
+          <p className="note">
+            連続正解の最高記録は <strong>{progress.bestCombo}問</strong>です。
+          </p>
+        )}
 
         {weakest.length > 0 && (
           <p className="note">
@@ -151,6 +154,18 @@ export default function StatsScreen({ stats, progress, accuracy, onBack, onReset
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function Metric({ label, value, unit }) {
+  return (
+    <div className="metric">
+      <div className="metric-value">
+        {value}
+        <span className="metric-unit">{unit}</span>
+      </div>
+      <div className="metric-label">{label}</div>
     </div>
   );
 }
