@@ -359,6 +359,13 @@ button {
   background: var(--surface);
   text-align: center;
   overflow-y: auto;
+  /* 中身がはみ出す端末でもバーは出さない。細い画面で文字の上に重なって
+     読みにくくなるほうが困る（スクロールはできるままにしてある） */
+  scrollbar-width: none;
+}
+
+.card::-webkit-scrollbar {
+  display: none;
 }
 
 /* 正誤はカードの縁でも示す。帯を見落としても色で分かる */
@@ -446,6 +453,16 @@ button {
 }
 
 .answer-good {
+  color: var(--good);
+}
+
+/* 穴埋めを埋めた部分。文のどこが答えなのかが分かるように色を変える */
+.fill {
+  color: var(--accent);
+  border-bottom: 2px solid currentColor;
+}
+
+.fill-good {
   color: var(--good);
 }
 
@@ -607,14 +624,15 @@ button {
   text-decoration-thickness: 2px;
 }
 
-/* 外した規則の名前。答えそのものより弱く、でも読み飛ばさない程度に */
+/* 外した規則の名前。判定の帯のすぐ下に、答えより先に目に入る位置で出す */
 .picked-type {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 1px 7px;
-  border-radius: 7px;
-  background: var(--surface-2);
-  font-size: 0.75rem;
+  margin: -4px 0 0;
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: var(--again-bg);
+  color: var(--again);
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .typing {

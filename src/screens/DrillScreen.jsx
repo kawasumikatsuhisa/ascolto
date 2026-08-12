@@ -43,6 +43,26 @@ function Wrapped({ text }) {
   ));
 }
 
+/** 穴埋めの問題か（___ が入っているか） */
+const BLANK = '___';
+
+/**
+ * 穴埋めを埋めた文。答えの部分だけ色を変えて、文のどこが変わったのかを
+ * 見せる。答えだけを単独で出すより、文の中での形が頭に残る。
+ */
+function Filled({ prompt, answer, good }) {
+  const [before, after = ''] = prompt.split(BLANK);
+  return (
+    <>
+      {before}
+      <span className={`fill${good ? ' fill-good' : ''}`}>
+        <Wrapped text={answer} />
+      </span>
+      {after}
+    </>
+  );
+}
+
 export default function DrillScreen({
   session,
   settings,
@@ -86,6 +106,15 @@ export default function DrillScreen({
   }, [item, session.picked, session.checked]);
 
   const judged = session.checked !== null;
+
+  // 穴埋めは、答え合わせのあと空欄を埋めた文をそのまま見せる。
+  // 答えを別の行に大きく出すより、文が1つで済むぶんカードが縮まない。
+  const cloze = item.prompt.includes(BLANK);
+  // 文字の大きさは埋めたあとの長さで決めておく。答え合わせの瞬間に
+  // 大きさが変わると、読んでいる途中で目が追い直しになる。
+  const promptSize = sizeClass(
+    cloze ? item.prompt.replace(BLANK, item.answer) : item.prompt,
+  );
 
   const say = () => speak(item.speech, settings.speechRate);
 
@@ -207,37 +236,48 @@ export default function DrillScreen({
           </div>
         )}
 
+        {/* 何を外したのかは判定のすぐ下に。答えより先に目に入る位置に置く */}
+        {pickedError && <p className="picked-type">{pickedError}</p>}
+
         <p className="prompt-note">{item.promptNote}</p>
-        <p className={`prompt prompt-${sizeClass(item.prompt)}`}>
-          <Wrapped text={item.prompt} />
+        <p className={`prompt prompt-${promptSize}`}>
+          {revealed && cloze ? (
+            <Filled prompt={item.prompt} answer={item.answer} good={judged} />
+          ) : (
+            <Wrapped text={item.prompt} />
+          )}
         </p>
 
         {revealed && (
           <div className="answer-block">
-            {session.checked === false && mode !== 'reveal' && (
-              <p className="picked">
-                {mode === 'typing' ? '入力したのは ' : '選んだのは '}
-                {session.picked ? (
-                  <>
-                    <span className="picked-text">
-                      <Wrapped text={session.picked} />
-                    </span>
-                    {pickedMeaning && `（${pickedMeaning}）`}
-                    {pickedError && (
-                      <span className="picked-type">{pickedError}</span>
-                    )}
-                  </>
-                ) : (
-                  '（未入力）'
-                )}
-              </p>
+            {/* 入力式は打った綴りを見せる。選択式は下の選択肢に ✕ が付くので出さない。
+                単語だけは、選んだ語の意味も添えないと違いが分からない */}
+            {session.checked === false &&
+              (mode === 'typing' || (mode === 'choice' && pickedMeaning)) && (
+                <p className="picked">
+                  {mode === 'typing' ? '入力したのは ' : '選んだのは '}
+                  {session.picked ? (
+                    <>
+                      <span className="picked-text">
+                        <Wrapped text={session.picked} />
+                      </span>
+                      {pickedMeaning && `（${pickedMeaning}）`}
+                    </>
+                  ) : (
+                    '（未入力）'
+                  )}
+                </p>
+              )}
+            {!cloze && (
+              <>
+                {session.checked === false && <p className="answer-label">正しくは</p>}
+                <p
+                  className={`answer answer-${sizeClass(item.answer)}${judged ? ' answer-good' : ''}`}
+                >
+                  <Wrapped text={item.answer} />
+                </p>
+              </>
             )}
-            {session.checked === false && <p className="answer-label">正しくは</p>}
-            <p
-              className={`answer answer-${sizeClass(item.answer)}${judged ? ' answer-good' : ''}`}
-            >
-              <Wrapped text={item.answer} />
-            </p>
             {item.answerNote && <p className="answer-note">{item.answerNote}</p>}
             {speechSupported && (
               <button className="btn btn-speak" onClick={say}>
