@@ -30,6 +30,7 @@ import {
 } from './italianCalendar.js';
 import { topicById } from './vocabulary.js';
 import { articleVariants } from './articleDrill.js';
+import { verbVariants } from './verbDrill.js';
 
 export const CHOICE_COUNT = 4;
 
@@ -266,6 +267,9 @@ function rawDistractors(item, rng) {
     case 'article':
       // 語頭の取り違え → 数の取り違え → 性の取り違え の順に並んでいる
       return articleVariants(item.variantSpec);
+    case 'verb':
+      // 規則活用してしまった形 → 人称違い の順
+      return verbVariants(source);
     default:
       return [];
   }

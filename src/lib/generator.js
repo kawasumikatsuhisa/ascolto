@@ -14,6 +14,7 @@ import { toItalian, featureTags } from './italianNumbers.js';
 import { buildChoices } from './choices.js';
 import { TOPICS, TOPIC_IDS, topicById } from './vocabulary.js';
 import { buildArticleItem } from './articleDrill.js';
+import { buildVerbItem, VERB_SCOPES } from './verbDrill.js';
 import {
   WEEKDAYS,
   MONTHS,
@@ -33,7 +34,10 @@ export const CATEGORIES = [
   { id: 'month', ja: '月', hint: 'gennaio 〜' },
   { id: 'words', ja: '単語', hint: 'あいさつ / カルチョ' },
   { id: 'articles', ja: '冠詞', hint: "il / lo / l' / del" },
+  { id: 'verbs', ja: '動詞', hint: 'vado / andiamo' },
 ];
+
+export { VERB_SCOPES } from './verbDrill.js';
 
 export { TOPICS, TOPIC_IDS } from './vocabulary.js';
 
@@ -350,6 +354,7 @@ const BUILDERS = {
   month: makeMonthItem,
   words: makeWordItem,
   articles: (settings, rng) => buildArticleItem(rng, pick, randInt),
+  verbs: (settings, rng) => buildVerbItem(settings, rng, randInt),
 };
 
 /** 有効になっているカテゴリ。全部オフなら数字にフォールバックする。 */
@@ -400,7 +405,7 @@ export function generateItem(settings, stats = {}, opts = {}) {
 /** 話題ぜんぶの成績を表すタグか（word:saluti のように単語の添字が無いもの） */
 export function isAggregateTag(tag) {
   const parts = tag.split(':');
-  if (tag === 'art:tutto') return true;
+  if (tag === 'art:tutto' || tag === 'verb:tutto') return true;
   return parts[0] === 'word' && parts.length === 2;
 }
 
@@ -461,6 +466,16 @@ export function describeTag(tag) {
     };
     return labels[rest] ?? rest;
   }
+  if (group === 'verb') {
+    const labels = {
+      tutto: '動詞ぜんぶ',
+      presente: '直説法現在',
+      irregolare: '不規則動詞',
+      regolare: '規則動詞',
+      isc: '-isc- 型',
+    };
+    return labels[rest] ?? rest; // それ以外は不定詞そのもの
+  }
   if (group === 'word') {
     const [topicId, index] = rest.split(':');
     const topic = topicById(topicId);
@@ -487,6 +502,7 @@ export function tagGroup(tag) {
       weekday: '曜日',
       month: '月',
       art: '冠詞',
+      verb: '動詞',
     }[group] ?? group
   );
 }

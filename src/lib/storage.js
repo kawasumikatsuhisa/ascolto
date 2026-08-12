@@ -16,7 +16,10 @@ export const DEFAULT_SETTINGS = {
     month: true,
     words: true,
     articles: true,
+    verbs: true,
   },
+  // 動詞をどこまで出すか（VERB_SCOPES の id）
+  verbScope: 'presente',
   // 単語カテゴリで出す話題
   topics: {
     saluti: true,
