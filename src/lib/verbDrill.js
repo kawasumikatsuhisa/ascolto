@@ -13,13 +13,40 @@ import {
   PERSONS,
   conjugateRegular,
   regularParticiple,
+  agreeParticiple,
 } from './verbs.js';
-import { VERBS } from './verbData.js';
+import { VERBS, verbByInfinitive } from './verbData.js';
 
 /** 出題する時制。上から順に開けていく。 */
 export const VERB_SCOPES = [
   { id: 'presente', ja: '現在だけ', hint: '直説法現在' },
+  { id: 'passato', ja: '現在 + 近過去', hint: 'essere / avere の選択' },
 ];
+
+/** どこまで開けるとどの時制が出るか */
+const SCOPE_TENSES = {
+  presente: ['presente'],
+  passato: ['presente', 'passatoProssimo'],
+};
+
+export const tensesInScope = (scope) => SCOPE_TENSES[scope] ?? SCOPE_TENSES.presente;
+
+/** 複合時制かどうか */
+export const isCompound = (tense) => tense === 'passatoProssimo';
+
+/** 複合時制で使う助動詞の時制 */
+const AUX_TENSE = { passatoProssimo: 'presente' };
+
+/**
+ * 主語。essere を取る動詞は過去分詞が主語と一致するので、
+ * 性がはっきりする名前を使う（io だと男女どちらでも正解になってしまう）。
+ */
+export const NAMED_SUBJECTS = {
+  'm-sing': { text: 'Marco', person: 2, gender: 'm', number: 'sing' },
+  'f-sing': { text: 'Anna', person: 2, gender: 'f', number: 'sing' },
+  'm-plur': { text: 'Marco e Luca', person: 5, gender: 'm', number: 'plur' },
+  'f-plur': { text: 'Anna e Maria', person: 5, gender: 'f', number: 'plur' },
+};
 
 /** その動詞・時制の6形。不規則があればそれを、なければ規則で作る。 */
 export function formsOf(verb, tense) {
@@ -37,14 +64,78 @@ export function participleOf(verb) {
 export const isIrregularIn = (verb, tense) => Boolean(verb.irregular?.[tense]);
 
 /**
+ * 複合時制の形を組み立てる。個別には保存しない。
+ *   助動詞の活用 + 過去分詞（essere なら主語と性数一致）
+ */
+export function compoundForm(verb, tense, person, agreement = {}) {
+  const auxVerb = verbByInfinitive(verb.aux);
+  const aux = formsOf(auxVerb, AUX_TENSE[tense])[person];
+  const participle =
+    verb.aux === 'essere'
+      ? agreeParticiple(participleOf(verb), agreement)
+      : participleOf(verb);
+  return `${aux} ${participle}`;
+}
+
+/** その時制・人称の形。単純形でも複合形でも同じ入り口で取れる。 */
+export function formFor(verb, tense, person, agreement = {}) {
+  return isCompound(tense)
+    ? compoundForm(verb, tense, person, agreement)
+    : formsOf(verb, tense)[person];
+}
+
+/**
  * 誤答の候補。紛らわしい順に並べる。
  * 1. 規則どおりに活用してしまった形（不規則動詞のとき）
  * 2. 別の人称
  */
-export function verbVariants({ verbIndex, tense, person }) {
+export function verbVariants({ verbIndex, tense, person, agreement }) {
   const verb = VERBS[verbIndex];
-  const correct = formsOf(verb, tense)[person];
+  const correct = formFor(verb, tense, person, agreement);
   const out = [];
+
+  if (isCompound(tense)) {
+    const other = verb.aux === 'essere' ? 'avere' : 'essere';
+    const otherAux = formsOf(verbByInfinitive(other), AUX_TENSE[tense])[person];
+    const plain = participleOf(verb);
+    const agreed =
+      verb.aux === 'essere' ? agreeParticiple(plain, agreement) : plain;
+
+    // 助動詞の取り違え。ho andato がいちばん踏まれる地雷
+    out.push(`${otherAux} ${agreed}`);
+
+    // 過去分詞の一致違い（essere を取る動詞だけ）
+    if (verb.aux === 'essere') {
+      const aux = formsOf(verbByInfinitive(verb.aux), AUX_TENSE[tense])[person];
+      for (const g of ['m', 'f']) {
+        for (const n of ['sing', 'plur']) {
+          out.push(`${aux} ${agreeParticiple(plain, { gender: g, number: n })}`);
+        }
+      }
+    }
+
+    // 不規則な過去分詞を規則どおりに作ってしまった形
+    if (verb.pp) {
+      const aux = formsOf(verbByInfinitive(verb.aux), AUX_TENSE[tense])[person];
+      const regular = regularParticiple(verb.inf);
+      out.push(
+        `${aux} ${verb.aux === 'essere' ? agreeParticiple(regular, agreement) : regular}`,
+      );
+    }
+
+    // 人称違い
+    for (const offset of [1, 2, 3]) {
+      const p = (person + offset) % PERSONS.length;
+      out.push(`${formsOf(verbByInfinitive(verb.aux), AUX_TENSE[tense])[p]} ${agreed}`);
+    }
+
+    const seenCompound = new Set([correct]);
+    return out.filter((form) => {
+      if (!form || seenCompound.has(form)) return false;
+      seenCompound.add(form);
+      return true;
+    });
+  }
 
   if (isIrregularIn(verb, tense)) {
     // 不規則を知らずに規則活用してしまった形
@@ -71,6 +162,15 @@ export function verbVariants({ verbIndex, tense, person }) {
 /** その問題が問うている型をタグにする */
 export function verbTags(verb, tense) {
   const tags = ['verb:tutto', `verb:${tense}`, `verb:${verb.inf}`];
+
+  if (isCompound(tense)) {
+    // 複合時制で問われるのは助動詞の選択と一致。人称より先にここを見せたい
+    tags.push('verb:ausiliare', `verb:aux-${verb.aux}`);
+    if (verb.aux === 'essere') tags.push('verb:accordo');
+    if (verb.pp) tags.push('verb:participio');
+    return tags;
+  }
+
   tags.push(isIrregularIn(verb, tense) ? 'verb:irregolare' : 'verb:regolare');
   if (verb.isc) tags.push('verb:isc');
   return tags;
@@ -78,6 +178,11 @@ export function verbTags(verb, tense) {
 
 /** 答えの下に出す説明 */
 export function verbHint(verb, tense) {
+  if (isCompound(tense)) {
+    const aux = `助動詞は ${verb.aux}`;
+    if (verb.aux === 'essere') return `${aux}。過去分詞は主語と性数一致する`;
+    return `${aux}。過去分詞は変化しない`;
+  }
   if (isIrregularIn(verb, tense)) {
     return `不規則: ${formsOf(verb, tense).join(' / ')}`;
   }
@@ -85,7 +190,13 @@ export function verbHint(verb, tense) {
   return null;
 }
 
-const TENSE_LABEL = { presente: '直説法現在' };
+const TENSE_LABEL = {
+  presente: '直説法現在',
+  passatoProssimo: '近過去',
+};
+
+/** 過去の時制には時を示す語を前に置く。これが無いと時制を決められない。 */
+const TIME_MARKER = { passatoProssimo: 'Ieri' };
 
 /**
  * 動詞の問題を1つ作る。
@@ -96,17 +207,30 @@ const TENSE_LABEL = { presente: '直説法現在' };
 export function buildVerbItem(settings, rng, randInt) {
   const verbIndex = randInt(0, VERBS.length - 1, rng);
   const verb = VERBS[verbIndex];
-  const person = randInt(0, PERSONS.length - 1, rng);
-  const tense = 'presente';
+  const tenses = tensesInScope(settings.verbScope);
+  const tense = tenses[randInt(0, tenses.length - 1, rng)];
 
-  const answer = formsOf(verb, tense)[person];
-  const subject = PERSONS[person].it;
-  const sentence = `${subject} ___ ${verb.tail}.`;
+  // essere を取る動詞の複合時制だけ、性がはっきりする主語を使う。
+  // io では andato と andata のどちらも正解になってしまうため。
+  const needsNamedSubject = isCompound(tense) && verb.aux === 'essere';
+  const named = needsNamedSubject
+    ? Object.values(NAMED_SUBJECTS)[randInt(0, 3, rng)]
+    : null;
+
+  const person = named ? named.person : randInt(0, PERSONS.length - 1, rng);
+  const agreement = named
+    ? { gender: named.gender, number: named.number }
+    : { gender: 'm', number: person === 3 || person === 4 || person === 5 ? 'plur' : 'sing' };
+
+  const answer = formFor(verb, tense, person, agreement);
+  const subject = named ? named.text : PERSONS[person].it;
+  const marker = TIME_MARKER[tense];
+  const sentence = `${marker ? `${marker} ` : ''}${subject} ___ ${verb.tail}.`;
 
   return {
-    key: `verb:${verb.inf}:${tense}:${person}`,
+    key: `verb:${verb.inf}:${tense}:${person}:${agreement.gender}${agreement.number}`,
     category: 'verbs',
-    source: { kind: 'verb', verbIndex, tense, person },
+    source: { kind: 'verb', verbIndex, tense, person, agreement },
     reverse: false,
     prompt: sentence,
     promptNote: `${TENSE_LABEL[tense]} · ${verb.inf}（${verb.ja}）`,

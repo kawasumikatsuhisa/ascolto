@@ -94,7 +94,7 @@ export const VERBS = [
   {
     inf: 'potere',
     ja: '〜できる',
-    tail: 'venire domani',
+    tail: 'aiutare',
     aux: 'avere',
     irregular: {
       presente: ['posso', 'puoi', 'può', 'possiamo', 'potete', 'possono'],
@@ -132,6 +132,7 @@ export const VERBS = [
     ja: '来る',
     tail: 'con noi',
     aux: 'essere',
+    pp: 'venuto', // 規則形は venito になってしまう
     irregular: {
       presente: ['vengo', 'vieni', 'viene', 'veniamo', 'venite', 'vengono'],
     },
@@ -265,7 +266,7 @@ export const VERBS = [
   { inf: 'credere', ja: '信じる', tail: 'a questa storia', aux: 'avere' },
   { inf: 'vendere', ja: '売る', tail: 'la macchina', aux: 'avere' },
   { inf: 'dormire', ja: '眠る', tail: 'otto ore', aux: 'avere' },
-  { inf: 'partire', ja: '出発する', tail: 'domani mattina', aux: 'essere' },
+  { inf: 'partire', ja: '出発する', tail: 'in treno', aux: 'essere' },
   { inf: 'capire', ja: '分かる', tail: 'la domanda', aux: 'avere', isc: true },
   { inf: 'finire', ja: '終える', tail: 'il lavoro', aux: 'avere', isc: true },
   { inf: 'preferire', ja: '〜のほうが好きだ', tail: 'il vino rosso', aux: 'avere', isc: true },

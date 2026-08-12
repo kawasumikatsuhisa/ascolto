@@ -470,9 +470,15 @@ export function describeTag(tag) {
     const labels = {
       tutto: '動詞ぜんぶ',
       presente: '直説法現在',
+      passatoProssimo: '近過去',
       irregolare: '不規則動詞',
       regolare: '規則動詞',
       isc: '-isc- 型',
+      ausiliare: '助動詞の選択',
+      'aux-essere': 'essere を取る動詞',
+      'aux-avere': 'avere を取る動詞',
+      accordo: '過去分詞の性数一致',
+      participio: '不規則な過去分詞',
     };
     return labels[rest] ?? rest; // それ以外は不定詞そのもの
   }

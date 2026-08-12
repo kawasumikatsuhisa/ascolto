@@ -6,6 +6,9 @@ import {
   isIrregularIn,
   verbVariants,
   verbTags,
+  compoundForm,
+  formFor,
+  NAMED_SUBJECTS,
 } from './verbDrill.js';
 import { PERSONS, conjugateRegular, regularParticiple } from './verbs.js';
 import { generateItem, CATEGORIES, describeTag, tagGroup } from './generator.js';
@@ -105,23 +108,32 @@ describe('現在形', () => {
 });
 
 describe('過去分詞', () => {
-  it.each([
-    ['fare', 'fatto'],
-    ['dire', 'detto'],
-    ['vedere', 'visto'],
-    ['prendere', 'preso'],
-    ['scrivere', 'scritto'],
-    ['aprire', 'aperto'],
-    ['rimanere', 'rimasto'],
-    ['nascere', 'nato'],
-  ])('%s -> %s', (inf, expected) => {
+  // 全動詞ぶん固定する。近過去はここが狂うとそのまま覚え間違いになるので、
+  // 「保存する / 生成させる」の判断ミスを必ず捕まえたい。
+  const PARTICIPLES = {
+    essere: 'stato', avere: 'avuto', fare: 'fatto', andare: 'andato',
+    stare: 'stato', dare: 'dato', dire: 'detto', potere: 'potuto',
+    volere: 'voluto', dovere: 'dovuto', sapere: 'saputo', venire: 'venuto',
+    uscire: 'uscito', bere: 'bevuto', rimanere: 'rimasto', tenere: 'tenuto',
+    scegliere: 'scelto', piacere: 'piaciuto', salire: 'salito', morire: 'morto',
+    vedere: 'visto', prendere: 'preso', scrivere: 'scritto', leggere: 'letto',
+    chiedere: 'chiesto', mettere: 'messo', chiudere: 'chiuso', perdere: 'perso',
+    aprire: 'aperto', offrire: 'offerto', nascere: 'nato', scendere: 'sceso',
+    parlare: 'parlato', mangiare: 'mangiato', lavorare: 'lavorato',
+    guardare: 'guardato', comprare: 'comprato', studiare: 'studiato',
+    abitare: 'abitato', cercare: 'cercato', arrivare: 'arrivato',
+    entrare: 'entrato', tornare: 'tornato', restare: 'restato',
+    credere: 'creduto', vendere: 'venduto', dormire: 'dormito',
+    partire: 'partito', capire: 'capito', finire: 'finito',
+    preferire: 'preferito',
+  };
+
+  it.each(Object.entries(PARTICIPLES))('%s -> %s', (inf, expected) => {
     expect(participleOf(verbByInfinitive(inf))).toBe(expected);
   });
 
-  it('規則動詞は生成される', () => {
-    expect(participleOf(verbByInfinitive('parlare'))).toBe('parlato');
-    expect(participleOf(verbByInfinitive('dormire'))).toBe('dormito');
-    expect(participleOf(verbByInfinitive('credere'))).toBe('creduto');
+  it('データにある動詞をすべて確かめている', () => {
+    expect(Object.keys(PARTICIPLES).sort()).toEqual(VERBS.map((v) => v.inf).sort());
   });
 });
 
@@ -232,5 +244,165 @@ describe('タグの組み立て', () => {
     expect(verbTags(verbByInfinitive('andare'), 'presente')).toContain('verb:irregolare');
     expect(verbTags(verbByInfinitive('parlare'), 'presente')).toContain('verb:regolare');
     expect(verbTags(verbByInfinitive('capire'), 'presente')).toContain('verb:isc');
+  });
+});
+
+describe('近過去', () => {
+  const passato = { ...verbsOnly, verbScope: 'passato' };
+
+  it('助動詞の活用 + 過去分詞で組み立つ', () => {
+    expect(compoundForm(verbByInfinitive('parlare'), 'passatoProssimo', 0)).toBe(
+      'ho parlato',
+    );
+    expect(
+      compoundForm(verbByInfinitive('andare'), 'passatoProssimo', 2, {
+        gender: 'f',
+        number: 'sing',
+      }),
+    ).toBe('è andata');
+    expect(
+      compoundForm(verbByInfinitive('venire'), 'passatoProssimo', 5, {
+        gender: 'f',
+        number: 'plur',
+      }),
+    ).toBe('sono venute');
+  });
+
+  it('avere を取る動詞は過去分詞が変わらない', () => {
+    for (const agreement of [
+      { gender: 'm', number: 'sing' },
+      { gender: 'f', number: 'plur' },
+    ]) {
+      expect(
+        compoundForm(verbByInfinitive('mangiare'), 'passatoProssimo', 2, agreement),
+      ).toBe('ha mangiato');
+    }
+  });
+
+  it('助動詞を取り違えた形が誤答に入る', () => {
+    const index = VERBS.findIndex((v) => v.inf === 'andare');
+    const variants = verbVariants({
+      verbIndex: index,
+      tense: 'passatoProssimo',
+      person: 2,
+      agreement: { gender: 'm', number: 'sing' },
+    });
+    // ho andato / ha andato が日本語話者のいちばんの地雷
+    expect(variants[0]).toBe('ha andato');
+  });
+
+  it('一致違いが誤答に入る', () => {
+    const index = VERBS.findIndex((v) => v.inf === 'andare');
+    const variants = verbVariants({
+      verbIndex: index,
+      tense: 'passatoProssimo',
+      person: 2,
+      agreement: { gender: 'f', number: 'sing' },
+    });
+    expect(variants).toContain('è andato');
+    expect(variants).toContain('è andati');
+  });
+
+  it('不規則な過去分詞を規則で作った形が誤答に入る', () => {
+    const index = VERBS.findIndex((v) => v.inf === 'scrivere');
+    const variants = verbVariants({
+      verbIndex: index,
+      tense: 'passatoProssimo',
+      person: 1,
+      agreement: {},
+    });
+    expect(variants).toContain('hai scrivuto');
+  });
+
+  it('essere を取る動詞は性がはっきりする主語で出る', () => {
+    const rng = seeded(21);
+    for (let i = 0; i < 800; i++) {
+      const item = generateItem(passato, {}, { rng });
+      if (item.source.tense !== 'passatoProssimo') continue;
+      const verb = VERBS[item.source.verbIndex];
+      if (verb.aux !== 'essere') continue;
+      // io では andato / andata のどちらも正解になってしまう
+      const subjects = Object.values(NAMED_SUBJECTS).map((s) => s.text);
+      const used = item.prompt.replace(/^Ieri /, '').split(' ___ ')[0];
+      expect(subjects).toContain(used);
+    }
+  });
+
+  it('答えが組み立てた形と一致する', () => {
+    const rng = seeded(22);
+    for (let i = 0; i < 800; i++) {
+      const item = generateItem(passato, {}, { rng });
+      const verb = VERBS[item.source.verbIndex];
+      expect(item.answer).toBe(
+        formFor(verb, item.source.tense, item.source.person, item.source.agreement),
+      );
+    }
+  });
+
+  it('過去の文には時を示す語が付く', () => {
+    const rng = seeded(23);
+    for (let i = 0; i < 400; i++) {
+      const item = generateItem(passato, {}, { rng });
+      if (item.source.tense === 'passatoProssimo') {
+        expect(item.prompt.startsWith('Ieri ')).toBe(true);
+      } else {
+        expect(item.prompt.startsWith('Ieri ')).toBe(false);
+      }
+    }
+  });
+
+  it('例文が時を示す語と矛盾しない', () => {
+    // 「Ieri ... domani mattina」のような文を作らない
+    for (const verb of VERBS) {
+      expect(verb.tail).not.toMatch(/domani|ieri/);
+    }
+  });
+
+  it('選択肢が4つで、正解がちょうど1つ', () => {
+    const rng = seeded(24);
+    for (let i = 0; i < 800; i++) {
+      const item = generateItem(passato, {}, { rng });
+      expect(item.choices).toHaveLength(CHOICE_COUNT);
+      expect(item.choices.filter((c) => c === item.answer)).toHaveLength(1);
+      expect(new Set(item.choices).size).toBe(CHOICE_COUNT);
+    }
+  });
+
+  it('間違いの型がタグに出る', () => {
+    const rng = seeded(25);
+    let sawAgreement = false;
+    let sawParticiple = false;
+    for (let i = 0; i < 800; i++) {
+      const item = generateItem(passato, {}, { rng });
+      if (item.source.tense !== 'passatoProssimo') continue;
+      const verb = VERBS[item.source.verbIndex];
+      expect(item.tags).toContain('verb:ausiliare');
+      expect(item.tags).toContain(`verb:aux-${verb.aux}`);
+      if (verb.aux === 'essere') {
+        expect(item.tags).toContain('verb:accordo');
+        sawAgreement = true;
+      }
+      if (verb.pp) {
+        expect(item.tags).toContain('verb:participio');
+        sawParticiple = true;
+      }
+    }
+    expect(sawAgreement).toBe(true);
+    expect(sawParticiple).toBe(true);
+  });
+
+  it('出題範囲の設定で時制が決まる', () => {
+    const rng = seeded(26);
+    const onlyPresent = new Set();
+    for (let i = 0; i < 200; i++) {
+      onlyPresent.add(generateItem(verbsOnly, {}, { rng }).source.tense);
+    }
+    expect(onlyPresent).toEqual(new Set(['presente']));
+
+    const both = new Set();
+    for (let i = 0; i < 400; i++) {
+      both.add(generateItem(passato, {}, { rng }).source.tense);
+    }
+    expect(both).toEqual(new Set(['presente', 'passatoProssimo']));
   });
 });
