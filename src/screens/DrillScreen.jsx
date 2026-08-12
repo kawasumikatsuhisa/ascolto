@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef } from 'react';
-import { CATEGORIES } from '../lib/generator.js';
+import { CATEGORIES, describeTag } from '../lib/generator.js';
+import { errorTypeOf } from '../lib/errorTypes.js';
 import { matches } from '../lib/italianNumbers.js';
 import { speak, speechSupported } from '../lib/speech.js';
 import { topicById } from '../lib/vocabulary.js';
@@ -75,6 +76,14 @@ export default function DrillScreen({
     if (!entry) return null;
     return item.reverse ? entry.it : entry.ja;
   }, [item, session.picked]);
+
+  // 冠詞・動詞で外したときは、何を外したのかをその場で言う。
+  // 成績画面で内訳を見るより、間違えた瞬間に型の名前を見るほうが結びつく。
+  const pickedError = useMemo(() => {
+    if (session.checked !== false) return null;
+    const type = errorTypeOf(item, session.picked);
+    return type ? describeTag(type) : null;
+  }, [item, session.picked, session.checked]);
 
   const say = () => speak(item.speech, settings.speechRate);
 
@@ -204,6 +213,9 @@ export default function DrillScreen({
                   <>
                     <Wrapped text={session.picked} />
                     {pickedMeaning && `（${pickedMeaning}）`}
+                    {pickedError && (
+                      <span className="picked-type">{pickedError}</span>
+                    )}
                   </>
                 ) : (
                   '（未入力）'

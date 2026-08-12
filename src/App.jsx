@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import HomeScreen from './screens/HomeScreen.jsx';
 import DrillScreen from './screens/DrillScreen.jsx';
 import StatsScreen from './screens/StatsScreen.jsx';
@@ -9,12 +9,16 @@ import {
   saveSettings,
   loadStats,
   saveStats,
+  loadErrors,
+  saveErrors,
   loadProgress,
   saveProgress,
   rollDailyProgress,
   applyGrade,
+  applyErrorType,
   applyResult,
 } from './lib/storage.js';
+import { errorTypeOf } from './lib/errorTypes.js';
 import { initSpeech, stopSpeaking } from './lib/speech.js';
 
 /** 間違えた問題を何問あとに出し直すか */
@@ -23,16 +27,27 @@ const REQUEUE_DELAY = { again: 3, hard: 9 };
 export default function App() {
   const [settings, setSettings] = useState(loadSettings);
   const [stats, setStats] = useState(loadStats);
+  const [errors, setErrors] = useState(loadErrors);
   const [progress, setProgress] = useState(() =>
     rollDailyProgress(loadProgress()),
   );
   const [screen, setScreen] = useState('home');
   const [session, setSession] = useState(null);
 
+  // 答え合わせの時点で出ている問題。setSession の更新関数の中から
+  // 別の state を触ると（StrictMode で二重に呼ばれて）数え過ぎるので、
+  // 間違いの型は更新関数の外で数える。
+  const itemRef = useRef(null);
+
   useEffect(() => initSpeech(), []);
   useEffect(() => saveSettings(settings), [settings]);
   useEffect(() => saveStats(stats), [stats]);
+  useEffect(() => saveErrors(errors), [errors]);
   useEffect(() => saveProgress(progress), [progress]);
+
+  useEffect(() => {
+    itemRef.current = session?.item ?? null;
+  }, [session?.item]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
@@ -177,6 +192,12 @@ export default function App() {
   }, []);
 
   const check = useCallback((isCorrect, picked = null) => {
+    if (!isCorrect) {
+      // 選んだ誤答から「どの規則を外したか」を割り出して数える。
+      // 打ち間違いのように型が分からないものは applyErrorType が捨てる。
+      const type = errorTypeOf(itemRef.current, picked);
+      if (type) setErrors((e) => applyErrorType(e, type));
+    }
     setSession((s) =>
       s ? { ...s, revealed: true, checked: isCorrect, picked } : s,
     );
@@ -208,9 +229,13 @@ export default function App() {
     return (
       <StatsScreen
         stats={stats}
+        errors={errors}
         progress={progress}
         onBack={() => setScreen('home')}
-        onReset={() => setStats({})}
+        onReset={() => {
+          setStats({});
+          setErrors({});
+        }}
       />
     );
   }

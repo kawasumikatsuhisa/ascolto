@@ -97,6 +97,10 @@ export const saveSettings = (v) => write('settings', v);
 export const loadStats = () => read('stats', {});
 export const saveStats = (v) => write('stats', v);
 
+/** 間違いの型ごとの回数（'verb:ausiliare' -> 12） */
+export const loadErrors = () => read('errors', {});
+export const saveErrors = (v) => write('errors', v);
+
 export const loadProgress = () => {
   const stored = read('progress', {});
   const progress = { ...DEFAULT_PROGRESS, ...stored };
@@ -113,7 +117,7 @@ export const saveProgress = (v) => write('progress', v);
 
 export function clearAll() {
   try {
-    for (const key of ['settings', 'stats', 'progress']) {
+    for (const key of ['settings', 'stats', 'errors', 'progress']) {
       localStorage.removeItem(PREFIX + key);
     }
   } catch {
@@ -157,6 +161,15 @@ export function applyResult(progress, isCorrect) {
     // その日の1問目を答えた時点で連続日数を伸ばす
     streak: progress.todayCount === 0 ? progress.streak + 1 : progress.streak,
   };
+}
+
+/**
+ * 間違いの型を1回ぶん数える。型が分からなければ（入力式の打ち間違いなど）
+ * 何もしない。当てはまらないものを無理に数えると内訳が濁る。
+ */
+export function applyErrorType(errors, type) {
+  if (!type) return errors;
+  return { ...errors, [type]: (errors[type] ?? 0) + 1 };
 }
 
 /** 正答率（%）。1問も答えていなければ null。 */

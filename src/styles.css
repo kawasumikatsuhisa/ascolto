@@ -520,6 +520,16 @@ button {
   font-size: 0.85rem;
 }
 
+/* 外した規則の名前。答えそのものより弱く、でも読み飛ばさない程度に */
+.picked-type {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 7px;
+  background: var(--surface-2);
+  font-size: 0.75rem;
+}
+
 .typing {
   display: flex;
   flex-direction: column;
@@ -764,6 +774,36 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 間違いの型はラベルがそのまま直しどころなので、帯より文字を優先する。
+   はみ出すときに削るのは型の名前のほうで、動詞 / 冠詞の札は残す。 */
+.error-row .stat-label {
+  flex: 1 1 58%;
+  display: flex;
+  align-items: center;
+}
+
+/* 型の名前は省略しない。「近過去と半過去の使い分け」が途中で切れると、
+   何を直せばいいのかが分からなくなる。折り返して全部見せる。 */
+.stat-name {
+  min-width: 0;
+  white-space: normal;
+}
+
+.error-row .stat-bar {
+  flex: 0 1 22%;
+}
+
+/* 間違いの型がどこの話か（動詞 / 冠詞）を小さく添える */
+.stat-area {
+  flex: 0 0 auto;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  font-size: 0.68rem;
+  color: var(--text-dim);
 }
 
 .stat-bar {

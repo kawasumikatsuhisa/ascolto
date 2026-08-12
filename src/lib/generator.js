@@ -463,6 +463,10 @@ export function describeTag(tag) {
       'prep-da': 'da + 定冠詞',
       'prep-in': 'in + 定冠詞',
       'prep-su': 'su + 定冠詞',
+      // ここから下は「間違いの型」（選んだ誤答から付くタグ）
+      attacco: "語頭による使い分け（il / lo / l'）",
+      genere: '名詞の性の取り違え',
+      numero: '単数・複数の取り違え',
     };
     return labels[rest] ?? rest;
   }
@@ -481,6 +485,10 @@ export function describeTag(tag) {
       'aux-avere': 'avere を取る動詞',
       accordo: '過去分詞の性数一致',
       participio: '不規則な過去分詞',
+      // ここから下は「間違いの型」（選んだ誤答から付くタグ）
+      persona: '人称の取り違え',
+      tempo: '時制の取り違え',
+      regolarizzato: '不規則動詞を規則で活用',
     };
     return labels[rest] ?? rest; // それ以外は不定詞そのもの
   }

@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { describeTag, isAggregateTag, tagGroup } from '../lib/generator.js';
+import { ERROR_TYPE_ORDER } from '../lib/errorTypes.js';
 import { accuracyOf } from '../lib/storage.js';
 
 /** 単語は項目数が多いので、グループごとに苦手な順で上位だけ出す */
 const ROWS_PER_GROUP = 12;
 
-export default function StatsScreen({ stats, progress, onBack, onReset }) {
+export default function StatsScreen({ stats, errors = {}, progress, onBack, onReset }) {
   const [confirming, setConfirming] = useState(false);
 
   const todayAccuracy = accuracyOf(progress.todayCorrect, progress.todayCount);
@@ -37,6 +38,36 @@ export default function StatsScreen({ stats, progress, onBack, onReset }) {
     }
     return [...byGroup.entries()];
   }, [stats]);
+
+  // 間違いの型の内訳。多い順に、いちばん多い型を満杯にした帯で見せる。
+  // 「どの語を落としたか」ではなく「どの規則で転んだか」を先に見せたい。
+  const errorRows = useMemo(() => {
+    const rows = Object.entries(errors)
+      .filter(([, count]) => count > 0)
+      .map(([tag, count]) => ({
+        tag,
+        count,
+        label: describeTag(tag),
+        area: tagGroup(tag),
+      }));
+    const total = rows.reduce((sum, row) => sum + row.count, 0);
+    const order = (tag) => {
+      const i = ERROR_TYPE_ORDER.indexOf(tag);
+      return i === -1 ? ERROR_TYPE_ORDER.length : i;
+    };
+    rows.sort((a, b) => b.count - a.count || order(a.tag) - order(b.tag));
+    return rows.map((row) => ({ ...row, share: total > 0 ? row.count / total : 0 }));
+  }, [errors]);
+
+  const errorTop = errorRows[0];
+  // 「いちばん多い型」は、ちゃんと抜けているときだけ言う。
+  // 同数で並んでいるのに1つを名指しすると、狙いどころを見誤らせる。
+  const errorLeader =
+    errorTop &&
+    errorTop.share >= 0.25 &&
+    (errorRows.length === 1 || errorTop.count > errorRows[1].count)
+      ? errorTop
+      : null;
 
   const weakest = groups
     .flatMap(([, bucket]) => bucket.rows)
@@ -87,6 +118,42 @@ export default function StatsScreen({ stats, progress, onBack, onReset }) {
           <p className="note">まだ記録がありません。1セットやってみてください。</p>
         )}
 
+        {errorRows.length > 0 && (
+          <section className="stat-group">
+            <h3>
+              <span>間違いの型</span>
+              <span className="stat-more">冠詞・動詞で選んだ誤答の内訳</span>
+            </h3>
+            {errorLeader && (
+              <p className="note">
+                いちばん多いのは <strong>{errorLeader.label}</strong>（
+                {Math.round(errorLeader.share * 100)}%）。ここを1つ潰すと効きます。
+              </p>
+            )}
+            {errorRows.map((row) => (
+              <div className="stat-row error-row" key={row.tag}>
+                <div className="stat-label">
+                  <span className="stat-name">{row.label}</span>
+                  <span className="stat-area">{row.area}</span>
+                </div>
+                <div className="stat-bar">
+                  <div
+                    className="stat-bar-fill"
+                    style={{
+                      width: `${Math.round((row.count / errorTop.count) * 100)}%`,
+                      background: 'var(--again)',
+                    }}
+                  />
+                </div>
+                <div className="stat-value">
+                  {row.count}回
+                  <span className="stat-seen">{Math.round(row.share * 100)}%</span>
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
+
         {groups.map(([group, { summary, rows }]) => (
           <section className="stat-group" key={group}>
             <h3>
@@ -128,7 +195,9 @@ export default function StatsScreen({ stats, progress, onBack, onReset }) {
         <div className="danger-zone">
           {confirming ? (
             <>
-              <p className="note">タグごとの正答率を消します。よろしいですか？</p>
+              <p className="note">
+                タグごとの正答率と間違いの型を消します。よろしいですか？
+              </p>
               <div className="actions-row">
                 <button
                   className="btn btn-ghost"

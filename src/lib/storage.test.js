@@ -1,12 +1,35 @@
 import { describe, it, expect } from 'vitest';
 import {
   applyGrade,
+  applyErrorType,
   applyResult,
   accuracyOf,
   rollDailyProgress,
   todayKey,
   DEFAULT_PROGRESS,
 } from './storage.js';
+
+describe('applyErrorType', () => {
+  it('型ごとに数える', () => {
+    let e = applyErrorType({}, 'verb:ausiliare');
+    e = applyErrorType(e, 'verb:ausiliare');
+    e = applyErrorType(e, 'art:attacco');
+    expect(e).toEqual({ 'verb:ausiliare': 2, 'art:attacco': 1 });
+  });
+
+  it('型が分からないものは数えない', () => {
+    const before = { 'verb:accordo': 3 };
+    expect(applyErrorType(before, null)).toBe(before);
+    expect(applyErrorType(before, undefined)).toBe(before);
+  });
+
+  it('元のオブジェクトを壊さない', () => {
+    const before = { 'verb:accordo': 3 };
+    const after = applyErrorType(before, 'verb:accordo');
+    expect(before['verb:accordo']).toBe(3);
+    expect(after['verb:accordo']).toBe(4);
+  });
+});
 
 describe('applyGrade', () => {
   it('good は seen だけ増やす', () => {

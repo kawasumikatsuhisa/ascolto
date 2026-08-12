@@ -87,14 +87,17 @@ export function formFor(verb, tense, person, agreement = {}) {
 }
 
 /**
- * 誤答の候補。紛らわしい順に並べる。
+ * 誤答の候補。紛らわしい順に並べ、1つずつ「何を外した形か」を付けて返す。
+ * 型を付けておくと、選ばれたときにどの規則で転んだのかが記録できる。
+ *
  * 1. 規則どおりに活用してしまった形（不規則動詞のとき）
  * 2. 別の人称
  */
-export function verbVariants({ verbIndex, tense, person, agreement, scope }) {
+export function verbVariantsDetailed({ verbIndex, tense, person, agreement, scope }) {
   const verb = VERBS[verbIndex];
   const correct = formFor(verb, tense, person, agreement);
   const out = [];
+  const add = (text, type) => out.push({ text, type });
   // 半過去まで開けているときだけ、時制の取り違えを誤答に混ぜる。
   // 使い分けを覚える前に出しても、ただ紛らわしいだけになる。
   const contrastTenses = tensesInScope(scope).includes('imperfetto');
@@ -107,17 +110,22 @@ export function verbVariants({ verbIndex, tense, person, agreement, scope }) {
       verb.aux === 'essere' ? agreeParticiple(plain, agreement) : plain;
 
     // 助動詞の取り違え。ho andato がいちばん踏まれる地雷
-    out.push(`${otherAux} ${agreed}`);
+    add(`${otherAux} ${agreed}`, 'verb:ausiliare');
 
     // 時制の取り違え（半過去との使い分け）
-    if (contrastTenses) out.push(formsOf(verb, 'imperfetto')[person]);
+    if (contrastTenses) {
+      add(formsOf(verb, 'imperfetto')[person], 'verb:uso-passato');
+    }
 
     // 過去分詞の一致違い（essere を取る動詞だけ）
     if (verb.aux === 'essere') {
       const aux = formsOf(verbByInfinitive(verb.aux), AUX_TENSE[tense])[person];
       for (const g of ['m', 'f']) {
         for (const n of ['sing', 'plur']) {
-          out.push(`${aux} ${agreeParticiple(plain, { gender: g, number: n })}`);
+          add(
+            `${aux} ${agreeParticiple(plain, { gender: g, number: n })}`,
+            'verb:accordo',
+          );
         }
       }
     }
@@ -126,51 +134,60 @@ export function verbVariants({ verbIndex, tense, person, agreement, scope }) {
     if (verb.pp) {
       const aux = formsOf(verbByInfinitive(verb.aux), AUX_TENSE[tense])[person];
       const regular = regularParticiple(verb.inf);
-      out.push(
+      add(
         `${aux} ${verb.aux === 'essere' ? agreeParticiple(regular, agreement) : regular}`,
+        'verb:participio',
       );
     }
 
     // 人称違い
     for (const offset of [1, 2, 3]) {
       const p = (person + offset) % PERSONS.length;
-      out.push(`${formsOf(verbByInfinitive(verb.aux), AUX_TENSE[tense])[p]} ${agreed}`);
+      add(
+        `${formsOf(verbByInfinitive(verb.aux), AUX_TENSE[tense])[p]} ${agreed}`,
+        'verb:persona',
+      );
     }
 
-    const seenCompound = new Set([correct]);
-    return out.filter((form) => {
-      if (!form || seenCompound.has(form)) return false;
-      seenCompound.add(form);
-      return true;
-    });
+    return dedupe(out, correct);
   }
 
   // 半過去なら、近過去との取り違えをいちばん前に置く
   if (tense === 'imperfetto' && contrastTenses) {
-    out.push(compoundForm(verb, 'passatoProssimo', person, agreement));
-    out.push(formsOf(verb, 'presente')[person]);
+    add(compoundForm(verb, 'passatoProssimo', person, agreement), 'verb:uso-passato');
+    add(formsOf(verb, 'presente')[person], 'verb:tempo');
   }
 
   if (isIrregularIn(verb, tense)) {
     // 不規則を知らずに規則活用してしまった形
     const regular = conjugateRegular(verb.inf, tense, { isc: verb.isc });
-    out.push(regular[person]);
+    add(regular[person], 'verb:regolarizzato');
     // 人称も外したうえで規則活用した形
-    out.push(regular[(person + 1) % PERSONS.length]);
+    add(regular[(person + 1) % PERSONS.length], 'verb:regolarizzato');
   }
 
   const forms = formsOf(verb, tense);
   // 近い人称から順に。単複の取り違えが起きやすいので 3人称と1人称を先に
   for (const offset of [2, 1, 3, 5, 4]) {
-    out.push(forms[(person + offset) % PERSONS.length]);
+    add(forms[(person + offset) % PERSONS.length], 'verb:persona');
   }
 
+  return dedupe(out, correct);
+}
+
+/** 空と重複を落とす。先に入れたほうの型を残す。 */
+function dedupe(variants, correct) {
   const seen = new Set([correct]);
-  return out.filter((form) => {
-    if (!form || seen.has(form)) return false;
-    seen.add(form);
+  return variants.filter(({ text }) => {
+    if (!text || seen.has(text)) return false;
+    seen.add(text);
     return true;
   });
+}
+
+/** 誤答の文字列だけ（選択肢を作るときはこちら） */
+export function verbVariants(source) {
+  return verbVariantsDetailed(source).map((v) => v.text);
 }
 
 /** その問題が問うている型をタグにする */

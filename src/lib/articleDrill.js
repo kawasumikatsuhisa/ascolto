@@ -29,12 +29,14 @@ function applyPreposition(article, preposition) {
 }
 
 /**
- * 誤答の候補を、紛らわしい順に並べて返す。
+ * 誤答の候補を、紛らわしい順に並べ、1つずつ「何を外した形か」を付けて返す。
+ * 型を付けておくと、選ばれたときにどの判断で転んだのかが記録できる。
+ *
  * 1. 同じ性・数で語頭の判断だけ違う形（il / lo / l'）
  * 2. 同じ性で数だけ違う形
  * 3. 性が違う形
  */
-export function articleVariants({ gender, number, kind, preposition, onset }) {
+export function articleVariantsDetailed({ gender, number, kind, preposition, onset }) {
   const make = (g, n, o) =>
     kind === 'indefinite'
       ? indefiniteArticle({ gender: g, onset: o })
@@ -46,23 +48,32 @@ export function articleVariants({ gender, number, kind, preposition, onset }) {
 
   const ordered = [];
   // 語頭の取り違え
-  for (const o of ONSETS) if (o !== onset) ordered.push(make(gender, number, o));
+  for (const o of ONSETS) {
+    if (o !== onset) ordered.push([make(gender, number, o), 'art:attacco']);
+  }
   // 数の取り違え（不定冠詞に複数形はないので定冠詞のときだけ）
   if (kind !== 'indefinite') {
-    for (const o of ONSETS) ordered.push(make(gender, otherNumber, o));
+    for (const o of ONSETS) {
+      ordered.push([make(gender, otherNumber, o), 'art:numero']);
+    }
   }
   // 性の取り違え
-  for (const o of ONSETS) ordered.push(make(otherGender, number, o));
+  for (const o of ONSETS) ordered.push([make(otherGender, number, o), 'art:genere']);
 
   const seen = new Set([correct]);
   const out = [];
-  for (const article of ordered) {
-    const form = applyPreposition(article, preposition);
-    if (seen.has(form)) continue;
-    seen.add(form);
-    out.push(form);
+  for (const [article, type] of ordered) {
+    const text = applyPreposition(article, preposition);
+    if (seen.has(text)) continue;
+    seen.add(text);
+    out.push({ text, type });
   }
   return out;
+}
+
+/** 誤答の文字列だけ（選択肢を作るときはこちら） */
+export function articleVariants(spec) {
+  return articleVariantsDetailed(spec).map((v) => v.text);
 }
 
 /** その問題が問うている規則をタグにする（成績で「間違いの型」を見せるため） */
