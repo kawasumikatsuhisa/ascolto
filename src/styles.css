@@ -403,25 +403,31 @@ button {
   line-height: 1.15;
   overflow-wrap: break-word;
   font-variant-numeric: tabular-nums;
+  /*
+   * 文字数で決めた大きさと、いま見えている高さから決めた上限の小さいほう。
+   * キーボードが出ると表示領域は半分以下になるので、文字数だけで決めると
+   * 問題文がカードからはみ出す（--app-height は App.jsx が入れている）。
+   */
+  font-size: min(var(--prompt-size), calc(var(--app-height, 100dvh) * 0.09));
 }
 
 .prompt-xl {
-  font-size: clamp(3.2rem, 19vw, 5.5rem);
+  --prompt-size: clamp(3.2rem, 19vw, 5.5rem);
 }
 .prompt-lg {
-  font-size: clamp(2.2rem, 11vw, 3.4rem);
+  --prompt-size: clamp(2.2rem, 11vw, 3.4rem);
 }
 .prompt-md {
-  font-size: clamp(1.6rem, 8vw, 2.4rem);
+  --prompt-size: clamp(1.6rem, 8vw, 2.4rem);
 }
 .prompt-sm {
-  font-size: clamp(1.3rem, 6vw, 1.9rem);
+  --prompt-size: clamp(1.3rem, 6vw, 1.9rem);
 }
 .prompt-xs {
-  font-size: clamp(1rem, 4.6vw, 1.6rem);
+  --prompt-size: clamp(1rem, 4.6vw, 1.6rem);
 }
 .prompt-xxs {
-  font-size: clamp(0.9rem, 4vw, 1.4rem);
+  --prompt-size: clamp(0.9rem, 4vw, 1.4rem);
 }
 
 .answer-block {
@@ -440,6 +446,8 @@ button {
   font-weight: 700;
   line-height: 1.25;
   overflow-wrap: break-word;
+  /* 問題文と同じく、見えている高さで頭を打たせる */
+  font-size: min(var(--answer-size), calc(var(--app-height, 100dvh) * 0.075));
 }
 
 /*
@@ -447,22 +455,22 @@ button {
  * competing させる必要はない。選択式なら下の選択肢にも同じ語が出ている。
  */
 .answer-xl {
-  font-size: clamp(1.9rem, 10vw, 2.6rem);
+  --answer-size: clamp(1.9rem, 10vw, 2.6rem);
 }
 .answer-lg {
-  font-size: clamp(1.6rem, 7.5vw, 2.1rem);
+  --answer-size: clamp(1.6rem, 7.5vw, 2.1rem);
 }
 .answer-md {
-  font-size: clamp(1.35rem, 6vw, 1.8rem);
+  --answer-size: clamp(1.35rem, 6vw, 1.8rem);
 }
 .answer-sm {
-  font-size: clamp(1.15rem, 5vw, 1.55rem);
+  --answer-size: clamp(1.15rem, 5vw, 1.55rem);
 }
 .answer-xs {
-  font-size: clamp(0.95rem, 4vw, 1.35rem);
+  --answer-size: clamp(0.95rem, 4vw, 1.35rem);
 }
 .answer-xxs {
-  font-size: clamp(0.85rem, 3.4vw, 1.15rem);
+  --answer-size: clamp(0.85rem, 3.4vw, 1.15rem);
 }
 
 .answer-good {
@@ -626,6 +634,32 @@ button {
 .text-input:focus {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+/*
+ * キーボードで表示領域が狭いときは、読むものを残して余白のほうを削る。
+ * data-short は App.jsx が visualViewport の高さを見て付け外しする。
+ */
+:root[data-short] .card {
+  padding: 12px;
+  gap: 8px;
+}
+
+:root[data-short] .prompt-note {
+  font-size: 0.75rem;
+}
+
+:root[data-short] .btn-tall {
+  min-height: 52px;
+  font-size: 1.05rem;
+}
+
+:root[data-short] .text-input {
+  min-height: 52px;
+}
+
+:root[data-short] .screen {
+  gap: 8px;
 }
 
 /* ---------------------------------------------------------------- 設定 */

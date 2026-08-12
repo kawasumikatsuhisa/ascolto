@@ -76,6 +76,9 @@ export default function App() {
       frame = requestAnimationFrame(() => {
         root.style.setProperty('--app-height', `${viewport.height}px`);
         root.style.setProperty('--app-offset', `${viewport.offsetTop}px`);
+        // キーボードで表示領域が半分以下になったら、余白と操作の高さを詰める。
+        // 背の低い端末では、これをしないと問題文がカードから溢れる。
+        root.toggleAttribute('data-short', viewport.height < 460);
         // ずらされたレイアウト側を戻す。これをしないと、キーボードを
         // 閉じたあとに上部が隠れたままになることがある。
         if (window.scrollY !== 0) window.scrollTo(0, 0);
