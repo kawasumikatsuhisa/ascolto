@@ -19,9 +19,97 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+
+    <!--
+      受け皿の見た目だけは、本体の CSS が読めなかった場合でも要るので
+      ここに直接書く。styles.css はあとから当たるので上書きされる。
+    -->
+    <style>
+      body {
+        margin: 0;
+        background: #0e1116;
+        color: #eef2f8;
+        font-family: system-ui, -apple-system, 'Hiragino Sans', sans-serif;
+      }
+      /* #root は本体の CSS で画面いっぱいの高さになるので、ふつうに置くと
+         受け皿がその下に追いやられて見えない。画面に貼りつけて出す。
+         （hidden 属性が効くよう :not([hidden]) で当てる） */
+      #boot-fallback:not([hidden]) {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 24px;
+        background: #0e1116;
+        text-align: center;
+        line-height: 1.7;
+      }
+      #boot-fallback p {
+        margin: 0;
+        max-width: 320px;
+      }
+      #boot-reset {
+        margin-top: 12px;
+        padding: 14px 28px;
+        border: 0;
+        border-radius: 16px;
+        background: #6db3ff;
+        color: #06203c;
+        font: inherit;
+        font-weight: 700;
+      }
+      #boot-fallback .boot-note {
+        color: #9aa7bd;
+        font-size: 0.85rem;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+
+    <!--
+      本体が動き出さなかったときの受け皿。真っ白なまま何もできないと、
+      キャッシュを捨てる手立てが利用者側に無くなってしまう。
+      React が描画できていれば #root に中身が入るので、ここは出さない。
+    -->
+    <div id="boot-fallback" hidden>
+      <p>アプリを読み込めませんでした。</p>
+      <p>保存したキャッシュを捨てて、もう一度読み込みます。</p>
+      <button type="button" id="boot-reset">やり直す</button>
+      <p class="boot-note">成績と設定は消えません。</p>
+    </div>
+
+    <script>
+      (function () {
+        var fallback = document.getElementById('boot-fallback');
+        setTimeout(function () {
+          if (!document.getElementById('root').firstChild) fallback.hidden = false;
+        }, 4000);
+
+        document.getElementById('boot-reset').addEventListener('click', function () {
+          var done = function () {
+            location.reload();
+          };
+          var jobs = [];
+          if (window.caches) jobs.push(caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          }));
+          if (navigator.serviceWorker) {
+            jobs.push(
+              navigator.serviceWorker.getRegistrations().then(function (regs) {
+                return Promise.all(regs.map(function (r) { return r.unregister(); }));
+              }),
+            );
+          }
+          Promise.all(jobs).then(done, done);
+        });
+      })();
+    </script>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
