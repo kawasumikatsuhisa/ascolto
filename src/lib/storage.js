@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS = {
     weekday: true,
     month: true,
     words: true,
+    articles: true,
   },
   // 単語カテゴリで出す話題
   topics: {

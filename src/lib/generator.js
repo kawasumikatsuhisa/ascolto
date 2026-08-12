@@ -13,6 +13,7 @@
 import { toItalian, featureTags } from './italianNumbers.js';
 import { buildChoices } from './choices.js';
 import { TOPICS, TOPIC_IDS, topicById } from './vocabulary.js';
+import { buildArticleItem } from './articleDrill.js';
 import {
   WEEKDAYS,
   MONTHS,
@@ -31,6 +32,7 @@ export const CATEGORIES = [
   { id: 'weekday', ja: '曜日', hint: 'lunedì 〜' },
   { id: 'month', ja: '月', hint: 'gennaio 〜' },
   { id: 'words', ja: '単語', hint: 'あいさつ / カルチョ' },
+  { id: 'articles', ja: '冠詞', hint: "il / lo / l' / del" },
 ];
 
 export { TOPICS, TOPIC_IDS } from './vocabulary.js';
@@ -347,6 +349,7 @@ const BUILDERS = {
   weekday: makeWeekdayItem,
   month: makeMonthItem,
   words: makeWordItem,
+  articles: (settings, rng) => buildArticleItem(rng, pick, randInt),
 };
 
 /** 有効になっているカテゴリ。全部オフなら数字にフォールバックする。 */
@@ -397,6 +400,7 @@ export function generateItem(settings, stats = {}, opts = {}) {
 /** 話題ぜんぶの成績を表すタグか（word:saluti のように単語の添字が無いもの） */
 export function isAggregateTag(tag) {
   const parts = tag.split(':');
+  if (tag === 'art:tutto') return true;
   return parts[0] === 'word' && parts.length === 2;
 }
 
@@ -436,6 +440,27 @@ export function describeTag(tag) {
   if (group === 'date' && rest.startsWith('num-')) {
     return `日にちの数字（${rest.slice(4)}）`;
   }
+  if (group === 'art') {
+    const labels = {
+      tutto: '冠詞ぜんぶ',
+      determinativo: '定冠詞',
+      indeterminativo: '不定冠詞',
+      lo: 'lo を取る語頭（s+子音・z など）',
+      uno: 'uno を取る語頭',
+      elisione: "母音の前の l'",
+      gli: '男性複数の gli',
+      'i-plurale': '男性複数の i',
+      'un-apostrofo': "女性の母音始まり un'",
+      'un-vocale': '男性の母音始まり un',
+      plurale: '複数形',
+      'prep-di': 'di + 定冠詞',
+      'prep-a': 'a + 定冠詞',
+      'prep-da': 'da + 定冠詞',
+      'prep-in': 'in + 定冠詞',
+      'prep-su': 'su + 定冠詞',
+    };
+    return labels[rest] ?? rest;
+  }
   if (group === 'word') {
     const [topicId, index] = rest.split(':');
     const topic = topicById(topicId);
@@ -455,8 +480,13 @@ export function tagGroup(tag) {
     return topic ? `単語 · ${topic.ja}` : '単語';
   }
   return (
-    { num: '数字', time: '時刻', date: '日付', weekday: '曜日', month: '月' }[
-      group
-    ] ?? group
+    {
+      num: '数字',
+      time: '時刻',
+      date: '日付',
+      weekday: '曜日',
+      month: '月',
+      art: '冠詞',
+    }[group] ?? group
   );
 }

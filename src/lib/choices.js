@@ -29,6 +29,7 @@ import {
   formatClock,
 } from './italianCalendar.js';
 import { topicById } from './vocabulary.js';
+import { articleVariants } from './articleDrill.js';
 
 export const CHOICE_COUNT = 4;
 
@@ -262,6 +263,9 @@ function rawDistractors(item, rng) {
       return cycleDistractors(MONTHS, source.index, item.reverse ? 'ja' : 'it');
     case 'word':
       return wordDistractors(source, item.reverse, rng);
+    case 'article':
+      // 語頭の取り違え → 数の取り違え → 性の取り違え の順に並んでいる
+      return articleVariants(item.variantSpec);
     default:
       return [];
   }
