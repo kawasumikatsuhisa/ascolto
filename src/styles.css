@@ -340,19 +340,28 @@ button {
 }
 
 /*
- * 問題カードは中身の高さだけを取る。画面いっぱいに広げると、問題文の
- * まわりが無駄に空くうえ、キーボードが出たときに問題が押し出される。
- * 上下の auto マージンで、余った領域の中央に浮かせる。
+ * 判定の帯 + 問題カード。中身の高さだけを取り、上下の auto マージンで
+ * 余った領域の中央に浮かせる。画面いっぱいに広げると、問題文のまわりが
+ * 無駄に空くうえ、キーボードが出たときに問題が押し出される。
  */
-.card {
+.stage {
   flex: 0 1 auto;
   min-height: 0;
-  max-height: 100%;
   margin: auto 0;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+.card {
+  flex: 0 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* center にしない。中身がはみ出したときに上下が均等にあふれて、
+     カードの上端より上に出た行がスクロールしても出てこなくなる */
+  justify-content: flex-start;
   gap: 12px;
   padding: 18px 14px;
   border-radius: var(--radius);
@@ -378,7 +387,7 @@ button {
 }
 
 /* カードが余白を吸うので、操作列は自然に最下部へ落ちる */
-.card ~ .actions {
+.stage ~ .actions {
   margin-top: 0;
 }
 
@@ -479,19 +488,14 @@ button {
 }
 
 .verdict {
-  align-self: stretch;
-  /* カードが縮んで中身がスクロールしても、判定だけは上に貼りついたまま
-     見えている必要がある（小さい画面ではここが最初に隠れてしまう） */
-  position: sticky;
-  top: -18px;
-  z-index: 1;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin: -6px 0 0;
+  margin: 0;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius);
   font-size: 1.15rem;
   font-weight: 700;
   letter-spacing: 0.04em;

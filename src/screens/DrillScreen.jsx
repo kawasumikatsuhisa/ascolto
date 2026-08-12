@@ -220,9 +220,9 @@ export default function DrillScreen({
         </div>
       </header>
 
-      <main className={`card${judged ? (session.checked ? ' card-ok' : ' card-ng') : ''}`}>
-        {/* 正誤はカードの上端いっぱいの帯で出す。文字だけだと、電車で
-            ちらっと見たときに正解だったのかどうかが分からない */}
+      {/* 判定の帯はカードの外に置く。中に入れると、カードがはみ出したときに
+          帯だけが貼りついて中の行に重なってしまう（不正解は行が1つ多い） */}
+      <div className="stage">
         {judged && (
           <div className={`verdict ${session.checked ? 'ok' : 'ng'}`}>
             <span className="verdict-mark" aria-hidden="true">
@@ -236,57 +236,65 @@ export default function DrillScreen({
           </div>
         )}
 
-        {/* 何を外したのかは判定のすぐ下に。答えより先に目に入る位置に置く */}
-        {pickedError && <p className="picked-type">{pickedError}</p>}
+        <main
+          className={`card${judged ? (session.checked ? ' card-ok' : ' card-ng') : ''}`}
+        >
+          {/* 何を外したのかは判定のすぐ下に。答えより先に目に入る位置に置く */}
+          {pickedError && <p className="picked-type">{pickedError}</p>}
 
-        <p className="prompt-note">{item.promptNote}</p>
-        <p className={`prompt prompt-${promptSize}`}>
-          {revealed && cloze ? (
-            <Filled prompt={item.prompt} answer={item.answer} good={judged} />
-          ) : (
-            <Wrapped text={item.prompt} />
-          )}
-        </p>
+          <p className="prompt-note">{item.promptNote}</p>
+          <p className={`prompt prompt-${promptSize}`}>
+            {revealed && cloze ? (
+              <Filled prompt={item.prompt} answer={item.answer} good={judged} />
+            ) : (
+              <Wrapped text={item.prompt} />
+            )}
+          </p>
 
-        {revealed && (
-          <div className="answer-block">
-            {/* 入力式は打った綴りを見せる。選択式は下の選択肢に ✕ が付くので出さない。
+          {revealed && (
+            <div className="answer-block">
+              {/* 入力式は打った綴りを見せる。選択式は下の選択肢に ✕ が付くので出さない。
                 単語だけは、選んだ語の意味も添えないと違いが分からない */}
-            {session.checked === false &&
-              (mode === 'typing' || (mode === 'choice' && pickedMeaning)) && (
-                <p className="picked">
-                  {mode === 'typing' ? '入力したのは ' : '選んだのは '}
-                  {session.picked ? (
-                    <>
-                      <span className="picked-text">
-                        <Wrapped text={session.picked} />
-                      </span>
-                      {pickedMeaning && `（${pickedMeaning}）`}
-                    </>
-                  ) : (
-                    '（未入力）'
+              {session.checked === false &&
+                (mode === 'typing' || (mode === 'choice' && pickedMeaning)) && (
+                  <p className="picked">
+                    {mode === 'typing' ? '入力したのは ' : '選んだのは '}
+                    {session.picked ? (
+                      <>
+                        <span className="picked-text">
+                          <Wrapped text={session.picked} />
+                        </span>
+                        {pickedMeaning && `（${pickedMeaning}）`}
+                      </>
+                    ) : (
+                      '（未入力）'
+                    )}
+                  </p>
+                )}
+              {!cloze && (
+                <>
+                  {session.checked === false && (
+                    <p className="answer-label">正しくは</p>
                   )}
-                </p>
+                  <p
+                    className={`answer answer-${sizeClass(item.answer)}${judged ? ' answer-good' : ''}`}
+                  >
+                    <Wrapped text={item.answer} />
+                  </p>
+                </>
               )}
-            {!cloze && (
-              <>
-                {session.checked === false && <p className="answer-label">正しくは</p>}
-                <p
-                  className={`answer answer-${sizeClass(item.answer)}${judged ? ' answer-good' : ''}`}
-                >
-                  <Wrapped text={item.answer} />
-                </p>
-              </>
-            )}
-            {item.answerNote && <p className="answer-note">{item.answerNote}</p>}
-            {speechSupported && (
-              <button className="btn btn-speak" onClick={say}>
-                ♪ 聞く
-              </button>
-            )}
-          </div>
-        )}
-      </main>
+              {item.answerNote && (
+                <p className="answer-note">{item.answerNote}</p>
+              )}
+              {speechSupported && (
+                <button className="btn btn-speak" onClick={say}>
+                  ♪ 聞く
+                </button>
+              )}
+            </div>
+          )}
+        </main>
+      </div>
 
       <div className="actions">
         {/* 選択式: 選ぶ → 正誤と規則を見る → 次へ。
@@ -310,14 +318,17 @@ export default function DrillScreen({
                   onClick={() => onCheck(choice === item.answer, choice)}
                 >
                   <Wrapped text={choice} />
-                  {state === ' is-answer' && <span className="choice-mark">✓</span>}
-                  {state === ' is-picked' && <span className="choice-mark">✕</span>}
+                  {state === ' is-answer' && (
+                    <span className="choice-mark">✓</span>
+                  )}
+                  {state === ' is-picked' && (
+                    <span className="choice-mark">✕</span>
+                  )}
                 </button>
               );
             })}
           </div>
         )}
-
 
         {mode === 'typing' && !revealed && (
           <form className="typing" onSubmit={submitTyping}>
