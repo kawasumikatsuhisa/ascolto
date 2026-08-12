@@ -1,0 +1,134 @@
+/**
+ * 動詞の活用。
+ *
+ * 規則動詞は語幹＋語尾で作る。活用表は保存しない。
+ * 不規則動詞だけ、単純形の活用を verbData.js に持たせる。
+ *
+ * 複合時制（近過去など）は「助動詞の活用 + 過去分詞」で組み立てるので、
+ * ここでは単純形だけを扱う。
+ */
+
+/** 人称。添字がそのまま活用形の並び順になる。 */
+export const PERSONS = [
+  { id: 'io', it: 'io', ja: '私' },
+  { id: 'tu', it: 'tu', ja: '君' },
+  { id: 'lui', it: 'lui', ja: '彼' },
+  { id: 'noi', it: 'noi', ja: '私たち' },
+  { id: 'voi', it: 'voi', ja: '君たち' },
+  { id: 'loro', it: 'loro', ja: '彼ら' },
+];
+
+/** 単純形の時制。遠過去は読解用なので出題には使わない。 */
+export const SIMPLE_TENSES = [
+  'presente',
+  'imperfetto',
+  'passatoRemoto',
+  'futuro',
+  'condizionale',
+  'congPresente',
+  'congImperfetto',
+];
+
+const ENDINGS = {
+  are: {
+    presente: ['o', 'i', 'a', 'iamo', 'ate', 'ano'],
+    imperfetto: ['avo', 'avi', 'ava', 'avamo', 'avate', 'avano'],
+    passatoRemoto: ['ai', 'asti', 'ò', 'ammo', 'aste', 'arono'],
+    futuro: ['erò', 'erai', 'erà', 'eremo', 'erete', 'eranno'],
+    condizionale: ['erei', 'eresti', 'erebbe', 'eremmo', 'ereste', 'erebbero'],
+    congPresente: ['i', 'i', 'i', 'iamo', 'iate', 'ino'],
+    congImperfetto: ['assi', 'assi', 'asse', 'assimo', 'aste', 'assero'],
+  },
+  ere: {
+    presente: ['o', 'i', 'e', 'iamo', 'ete', 'ono'],
+    imperfetto: ['evo', 'evi', 'eva', 'evamo', 'evate', 'evano'],
+    passatoRemoto: ['ei', 'esti', 'é', 'emmo', 'este', 'erono'],
+    futuro: ['erò', 'erai', 'erà', 'eremo', 'erete', 'eranno'],
+    condizionale: ['erei', 'eresti', 'erebbe', 'eremmo', 'ereste', 'erebbero'],
+    congPresente: ['a', 'a', 'a', 'iamo', 'iate', 'ano'],
+    congImperfetto: ['essi', 'essi', 'esse', 'essimo', 'este', 'essero'],
+  },
+  ire: {
+    presente: ['o', 'i', 'e', 'iamo', 'ite', 'ono'],
+    imperfetto: ['ivo', 'ivi', 'iva', 'ivamo', 'ivate', 'ivano'],
+    passatoRemoto: ['ii', 'isti', 'ì', 'immo', 'iste', 'irono'],
+    futuro: ['irò', 'irai', 'irà', 'iremo', 'irete', 'iranno'],
+    condizionale: ['irei', 'iresti', 'irebbe', 'iremmo', 'ireste', 'irebbero'],
+    congPresente: ['a', 'a', 'a', 'iamo', 'iate', 'ano'],
+    congImperfetto: ['issi', 'issi', 'isse', 'issimo', 'iste', 'issero'],
+  },
+};
+
+/** -isc- 型（capire）は現在形と接続法現在だけ語幹が伸びる */
+const ISC_ENDINGS = {
+  presente: ['isco', 'isci', 'isce', 'iamo', 'ite', 'iscono'],
+  congPresente: ['isca', 'isca', 'isca', 'iamo', 'iate', 'iscano'],
+};
+
+/** 不定詞の語尾（are / ere / ire）。分からなければ null。 */
+export function infinitiveGroup(infinitive) {
+  const m = /(are|ere|ire)$/.exec(infinitive);
+  return m ? m[1] : null;
+}
+
+/** 不定詞から語幹を取る */
+export function verbStem(infinitive) {
+  return infinitive.slice(0, -3);
+}
+
+/**
+ * 綴りの調整。-are 動詞だけに効く。
+ *  cercare + i  -> cerchi  （c/g の音を保つため h を入れる）
+ *  mangiare + i -> mangi   （ci/gi の i は e・i の前で落とす）
+ */
+function adjust(stem, ending, group) {
+  if (group !== 'are') return stem;
+  if (!/^[ei]/.test(ending)) return stem;
+  if (/[cg]i$/.test(stem)) return stem.slice(0, -1);
+  if (/[cg]$/.test(stem)) return `${stem}h`;
+  return stem;
+}
+
+/**
+ * 規則動詞を活用する。
+ * @param {string} infinitive parlare / credere / dormire / capire
+ * @param {string} tense SIMPLE_TENSES のどれか
+ * @param {{isc?: boolean}} [options] -ire の -isc- 型なら isc: true
+ * @returns {string[]} io tu lui noi voi loro の6形
+ */
+export function conjugateRegular(infinitive, tense, options = {}) {
+  const group = infinitiveGroup(infinitive);
+  if (!group) throw new Error(`活用できない不定詞: ${infinitive}`);
+
+  const table = ENDINGS[group][tense];
+  if (!table) throw new Error(`知らない時制: ${tense}`);
+
+  const stem = verbStem(infinitive);
+  const endings =
+    options.isc && group === 'ire' && ISC_ENDINGS[tense]
+      ? ISC_ENDINGS[tense]
+      : table;
+
+  return endings.map((ending) => adjust(stem, ending, group) + ending);
+}
+
+/** 規則動詞の過去分詞（-ato / -uto / -ito） */
+export function regularParticiple(infinitive) {
+  const group = infinitiveGroup(infinitive);
+  const stem = verbStem(infinitive);
+  if (group === 'are') return `${stem}ato`;
+  if (group === 'ere') return `${stem}uto`;
+  if (group === 'ire') return `${stem}ito`;
+  throw new Error(`活用できない不定詞: ${infinitive}`);
+}
+
+/**
+ * 過去分詞を主語に合わせる。essere を取る動詞でだけ使う。
+ * andato / andata / andati / andate
+ */
+export function agreeParticiple(participle, { gender = 'm', number = 'sing' } = {}) {
+  if (!participle.endsWith('o')) return participle; // 不規則で -o 以外なら触らない
+  const base = participle.slice(0, -1);
+  if (number === 'plur') return `${base}${gender === 'f' ? 'e' : 'i'}`;
+  return `${base}${gender === 'f' ? 'a' : 'o'}`;
+}
