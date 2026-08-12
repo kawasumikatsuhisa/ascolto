@@ -5,6 +5,7 @@ import {
   applyResult,
   accuracyOf,
   rollDailyProgress,
+  loadProgress,
   todayKey,
   DEFAULT_PROGRESS,
 } from './storage.js';
@@ -181,5 +182,99 @@ describe('accuracyOf', () => {
 
   it('1問も答えていなければ null', () => {
     expect(accuracyOf(0, 0)).toBeNull();
+  });
+});
+
+describe('きょうの最長連続', () => {
+  const run = (results) => {
+    let p = { ...DEFAULT_PROGRESS, day: todayKey() };
+    for (const ok of results) p = applyResult(p, ok);
+    return p;
+  };
+
+  it('いま続いている数ではなく、その日のいちばん長い連続を残す', () => {
+    // 4連続 → 間違い → 2連続 で終わる
+    const p = run([true, true, true, true, false, true, true]);
+    expect(p.combo).toBe(2);
+    expect(p.todayBestCombo).toBe(4);
+    expect(p.bestCombo).toBe(4);
+  });
+
+  it('日をまたぐと数え直す（通算の最高は残す）', () => {
+    const p = run([true, true, true, true, true]);
+    const next = rollDailyProgress(p, '2099-01-01');
+    expect(next.todayBestCombo).toBe(0);
+    expect(next.bestCombo).toBe(5);
+    // 連続正解そのものは日をまたいでも切らさない
+    expect(next.combo).toBe(5);
+  });
+
+  it('その日のうちなら数え直さない', () => {
+    const p = run([true, true]);
+    expect(rollDailyProgress(p, todayKey())).toBe(p);
+  });
+
+  it('旧版の記録は、いま続いている数を下限として引き継ぐ', () => {
+    const store = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => store.get(k) ?? null,
+      setItem: (k, v) => store.set(k, v),
+      removeItem: (k) => store.delete(k),
+    };
+    // todayBestCombo を持たない記録を読んでも 0 に落とさない
+    store.set(
+      'ascolto.v1.progress',
+      JSON.stringify({
+        day: todayKey(),
+        todayCount: 20,
+        todayCorrect: 15,
+        total: 20,
+        correct: 15,
+        combo: 3,
+        bestCombo: 36,
+      }),
+    );
+    expect(loadProgress().todayBestCombo).toBe(3);
+
+    // まだ今日1問も答えていないなら 0 から
+    store.set(
+      'ascolto.v1.progress',
+      JSON.stringify({ day: todayKey(), todayCount: 0, todayCorrect: 0, combo: 7 }),
+    );
+    expect(loadProgress().todayBestCombo).toBe(0);
+    delete globalThis.localStorage;
+  });
+});
+
+describe('日をまたいだ連続正解', () => {
+  it('きょうの最長連続に昨日ぶんを混ぜない', () => {
+    // 昨日 5問連続で正解したまま日をまたぎ、今日 3問正解して1問外す
+    let p = rollDailyProgress(
+      { ...DEFAULT_PROGRESS, day: '2026-08-11', combo: 5, bestCombo: 36 },
+      '2026-08-12',
+    );
+    expect(p.combo).toBe(5); // 連続そのものは切らさない
+    expect(p.todayBestCombo).toBe(0);
+
+    for (const ok of [true, true, true]) p = applyResult(p, ok);
+    expect(p.combo).toBe(8); // 通算では8連続
+    expect(p.todayBestCombo).toBe(3); // 今日答えたのは3問
+    expect(p.bestCombo).toBe(36); // 通算の記録は据え置き
+
+    p = applyResult(p, false);
+    p = applyResult(p, true);
+    p = applyResult(p, true);
+    expect(p.todayBestCombo).toBe(3);
+    expect(p.combo).toBe(2);
+  });
+
+  it('きょうの最長連続が今日の問題数を超えない', () => {
+    let p = rollDailyProgress(
+      { ...DEFAULT_PROGRESS, day: '2026-08-11', combo: 30, bestCombo: 30 },
+      '2026-08-12',
+    );
+    for (let i = 0; i < 4; i++) p = applyResult(p, true);
+    expect(p.todayBestCombo).toBeLessThanOrEqual(p.todayCount);
+    expect(p.todayBestCombo).toBe(4);
   });
 });

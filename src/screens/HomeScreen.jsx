@@ -43,8 +43,8 @@ export default function HomeScreen({
 
         {progress.bestCombo > 0 && (
           <p className="note">
-            連続正解 <strong>{progress.combo}問</strong>
-            <span className="note-sep">最高 {progress.bestCombo}問</span>
+            きょうの最長連続 <strong>{progress.todayBestCombo}問</strong>
+            <span className="note-sep">通算の最高 {progress.bestCombo}問</span>
             <span className="note-sep">通算 {overallAccuracy}%</span>
           </p>
         )}

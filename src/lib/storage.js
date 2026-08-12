@@ -54,7 +54,8 @@ export const DEFAULT_PROGRESS = {
   total: 0,
   correct: 0,
   combo: 0, // 連続正解（いま続いている数）
-  bestCombo: 0, // 連続正解の最高記録
+  todayBestCombo: 0, // きょうの最長連続
+  bestCombo: 0, // 連続正解の最高記録（通算）
 };
 
 function read(key, fallback) {
@@ -111,6 +112,12 @@ export const loadProgress = () => {
     progress.todayCount = 0;
     progress.todayCorrect = 0;
   }
+
+  // 旧版には「きょうの最長連続」が無い。いま続いている数だけは確実に
+  // 今日のものなので、それを下限として引き継ぐ（0 から数え直さない）。
+  if (stored.todayBestCombo === undefined) {
+    progress.todayBestCombo = progress.todayCount > 0 ? progress.combo : 0;
+  }
   return progress;
 };
 export const saveProgress = (v) => write('progress', v);
@@ -139,8 +146,16 @@ export function rollDailyProgress(progress, today = todayKey()) {
 
   const yesterday = todayKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
   const streak = progress.day === yesterday ? progress.streak : 0;
-  // 連続正解は日をまたいでも切らさない（正解が続いている限りの数なので）
-  return { ...progress, day: today, todayCount: 0, todayCorrect: 0, streak };
+  // 連続正解は日をまたいでも切らさない（正解が続いている限りの数なので）。
+  // ただし「きょうの最長連続」は今日ぶんの記録なので数え直す。
+  return {
+    ...progress,
+    day: today,
+    todayCount: 0,
+    todayCorrect: 0,
+    todayBestCombo: 0,
+    streak,
+  };
 }
 
 /**
@@ -150,13 +165,18 @@ export function rollDailyProgress(progress, today = todayKey()) {
  */
 export function applyResult(progress, isCorrect) {
   const combo = isCorrect ? progress.combo + 1 : 0;
+  const todayCount = progress.todayCount + 1;
+  // きょうの最長連続。連続正解は日をまたいでも切らさないので、そのまま
+  // 使うと昨日ぶんまで数えてしまう。今日答えた数で頭を打たせる。
+  const todayCombo = Math.min(combo, todayCount);
   return {
     ...progress,
-    todayCount: progress.todayCount + 1,
+    todayCount,
     todayCorrect: progress.todayCorrect + (isCorrect ? 1 : 0),
     total: progress.total + 1,
     correct: progress.correct + (isCorrect ? 1 : 0),
     combo,
+    todayBestCombo: Math.max(progress.todayBestCombo, todayCombo),
     bestCombo: Math.max(progress.bestCombo, combo),
     // その日の1問目を答えた時点で連続日数を伸ばす
     streak: progress.todayCount === 0 ? progress.streak + 1 : progress.streak,

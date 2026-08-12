@@ -98,12 +98,26 @@ export default function StatsScreen({ stats, errors = {}, progress, onBack, onRe
             value={overallAccuracy === null ? '—' : overallAccuracy}
             unit={overallAccuracy === null ? '' : '%'}
           />
-          <Metric label="連続正解" value={progress.combo} unit="問" />
+          {/* いま続いている数ではなく、きょうの最長。あとから見て意味がある
+              のはこちら（間違えた直後に開くと「連続1問」になってしまう） */}
+          <Metric label="きょうの最長連続" value={progress.todayBestCombo} unit="問" />
         </div>
 
         {progress.bestCombo > 0 && (
           <p className="note">
-            連続正解の最高記録は <strong>{progress.bestCombo}問</strong>です。
+            連続正解の通算記録は <strong>{progress.bestCombo}問</strong>
+            {progress.combo >= 2 && (
+              <span className="note-sep">いま{progress.combo}問つづき</span>
+            )}
+          </p>
+        )}
+
+        {/* 今日ぶんしか記録が無いあいだは、きょうと通算が同じ数字になる。
+            壊れているように見えるので、そのことを書いておく */}
+        {progress.total > 0 && progress.total === progress.todayCount && (
+          <p className="note">
+            記録はまだ今日のぶんだけです。日をまたぐと「きょう」と「のべ」が
+            分かれます。
           </p>
         )}
 
