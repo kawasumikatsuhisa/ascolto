@@ -242,6 +242,19 @@ const TENSE_LABEL = {
 };
 
 /**
+ * 問題の上に出す見出し。
+ *
+ * 近過去と半過去の両方が出るようになったら、どちらなのかは書かない。
+ * 「半過去」と書いてしまうと、Ieri / Ogni giorno を読まなくても
+ * 選択肢を外側から絞れてしまい、使い分けの練習にならない。
+ */
+function tenseLabel(tense, scope) {
+  const contrast = tensesInScope(scope).includes('imperfetto');
+  if (contrast && (isCompound(tense) || tense === 'imperfetto')) return '過去';
+  return TENSE_LABEL[tense];
+}
+
+/**
  * 時を示す語。これが無いとどの時制か決められない。
  * 近過去は一回きりの出来事、半過去は習慣や状態を表す語を選ぶ。
  */
@@ -296,7 +309,7 @@ export function buildVerbItem(settings, rng, randInt) {
     },
     reverse: false,
     prompt: sentence,
-    promptNote: `${TENSE_LABEL[tense]} · ${verb.inf}（${verb.ja}）`,
+    promptNote: `${tenseLabel(tense, settings.verbScope)} · ${verb.inf}（${verb.ja}）`,
     answer,
     answerNote: verbHint(verb, tense),
     speech: sentence.replace('___', answer),

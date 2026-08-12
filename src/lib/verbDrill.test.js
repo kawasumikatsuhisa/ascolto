@@ -8,6 +8,7 @@ import {
   verbTags,
   compoundForm,
   formFor,
+  buildVerbItem,
   NAMED_SUBJECTS,
 } from './verbDrill.js';
 import { PERSONS, conjugateRegular, regularParticiple } from './verbs.js';
@@ -507,5 +508,31 @@ describe('半過去', () => {
       expect(item.choices.filter((c) => c === item.answer)).toHaveLength(1);
       expect(new Set(item.choices).size).toBe(CHOICE_COUNT);
     }
+  });
+});
+
+describe('見出しに答えを書かない', () => {
+  const randInt = (min, max, rng) => min + Math.floor((max - min + 1) * rng());
+
+  it('近過去と半過去が両方出るときは、どちらかを書かない', () => {
+    const notes = new Set();
+    for (let i = 0; i < 200; i++) {
+      const r = () => ((i * 7919) % 1000) / 1000;
+      const item = buildVerbItem({ verbScope: 'imperfetto' }, r, randInt);
+      if (item.source.tense === 'presente') continue;
+      notes.add(item.promptNote.split(' ·')[0]);
+    }
+    expect(notes.size).toBeGreaterThan(0);
+    for (const note of notes) expect(note).toBe('過去');
+  });
+
+  it('近過去までしか開けていないなら、時制を書いてよい', () => {
+    const seen = new Set();
+    for (let i = 0; i < 200; i++) {
+      const r = () => ((i * 7919) % 1000) / 1000;
+      const item = buildVerbItem({ verbScope: 'passato' }, r, randInt);
+      seen.add(item.promptNote.split(' ·')[0]);
+    }
+    expect(seen).toContain('近過去');
   });
 });
