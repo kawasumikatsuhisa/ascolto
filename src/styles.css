@@ -442,23 +442,27 @@ button {
   overflow-wrap: break-word;
 }
 
+/*
+ * 答えは問題文より一段小さく。読めれば足りるもので、問題文と大きさを
+ * competing させる必要はない。選択式なら下の選択肢にも同じ語が出ている。
+ */
 .answer-xl {
-  font-size: clamp(2.4rem, 13vw, 3.6rem);
+  font-size: clamp(1.9rem, 10vw, 2.6rem);
 }
 .answer-lg {
-  font-size: clamp(1.9rem, 9vw, 2.8rem);
+  font-size: clamp(1.6rem, 7.5vw, 2.1rem);
 }
 .answer-md {
-  font-size: clamp(1.5rem, 7vw, 2.2rem);
+  font-size: clamp(1.35rem, 6vw, 1.8rem);
 }
 .answer-sm {
-  font-size: clamp(1.25rem, 5.6vw, 1.8rem);
+  font-size: clamp(1.15rem, 5vw, 1.55rem);
 }
 .answer-xs {
-  font-size: clamp(0.95rem, 4.3vw, 1.5rem);
+  font-size: clamp(0.95rem, 4vw, 1.35rem);
 }
 .answer-xxs {
-  font-size: clamp(0.85rem, 3.7vw, 1.3rem);
+  font-size: clamp(0.85rem, 3.4vw, 1.15rem);
 }
 
 .answer-good {
