@@ -34,8 +34,6 @@ const ENDINGS = {
     presente: ['o', 'i', 'a', 'iamo', 'ate', 'ano'],
     imperfetto: ['avo', 'avi', 'ava', 'avamo', 'avate', 'avano'],
     passatoRemoto: ['ai', 'asti', 'ò', 'ammo', 'aste', 'arono'],
-    futuro: ['erò', 'erai', 'erà', 'eremo', 'erete', 'eranno'],
-    condizionale: ['erei', 'eresti', 'erebbe', 'eremmo', 'ereste', 'erebbero'],
     congPresente: ['i', 'i', 'i', 'iamo', 'iate', 'ino'],
     congImperfetto: ['assi', 'assi', 'asse', 'assimo', 'aste', 'assero'],
   },
@@ -43,8 +41,6 @@ const ENDINGS = {
     presente: ['o', 'i', 'e', 'iamo', 'ete', 'ono'],
     imperfetto: ['evo', 'evi', 'eva', 'evamo', 'evate', 'evano'],
     passatoRemoto: ['ei', 'esti', 'é', 'emmo', 'este', 'erono'],
-    futuro: ['erò', 'erai', 'erà', 'eremo', 'erete', 'eranno'],
-    condizionale: ['erei', 'eresti', 'erebbe', 'eremmo', 'ereste', 'erebbero'],
     congPresente: ['a', 'a', 'a', 'iamo', 'iate', 'ano'],
     congImperfetto: ['essi', 'essi', 'esse', 'essimo', 'este', 'essero'],
   },
@@ -52,12 +48,23 @@ const ENDINGS = {
     presente: ['o', 'i', 'e', 'iamo', 'ite', 'ono'],
     imperfetto: ['ivo', 'ivi', 'iva', 'ivamo', 'ivate', 'ivano'],
     passatoRemoto: ['ii', 'isti', 'ì', 'immo', 'iste', 'irono'],
-    futuro: ['irò', 'irai', 'irà', 'iremo', 'irete', 'iranno'],
-    condizionale: ['irei', 'iresti', 'irebbe', 'iremmo', 'ireste', 'irebbero'],
     congPresente: ['a', 'a', 'a', 'iamo', 'iate', 'ano'],
     congImperfetto: ['issi', 'issi', 'isse', 'issimo', 'iste', 'issero'],
   },
 };
+
+/**
+ * 未来と条件法は語尾が違うだけで、語幹は同じものを使う。
+ * essere なら sar- から sarò と sarei の両方が出る。だから不規則動詞でも
+ * 保存するのは語幹1つでよく、12の形はそこから作れる。
+ */
+const STEM_ENDINGS = {
+  futuro: ['ò', 'ai', 'à', 'emo', 'ete', 'anno'],
+  condizionale: ['ei', 'esti', 'ebbe', 'emmo', 'este', 'ebbero'],
+};
+
+/** 未来・条件法の語幹を使う時制か */
+export const usesFutureStem = (tense) => tense in STEM_ENDINGS;
 
 /** -isc- 型（capire）は現在形と接続法現在だけ語幹が伸びる */
 const ISC_ENDINGS = {
@@ -111,6 +118,11 @@ export function conjugateRegular(infinitive, tense, options = {}) {
   const group = infinitiveGroup(infinitive);
   if (!group) throw new Error(`活用できない不定詞: ${infinitive}`);
 
+  // 未来と条件法は語幹が同じなので、そちらの入り口にまわす
+  if (usesFutureStem(tense)) {
+    return conjugateFromStem(regularFutureStem(infinitive), tense);
+  }
+
   const table = ENDINGS[group][tense];
   if (!table) throw new Error(`知らない時制: ${tense}`);
 
@@ -121,6 +133,30 @@ export function conjugateRegular(infinitive, tense, options = {}) {
       : table;
 
   return endings.map((ending) => adjust(stem, ending, group) + ending);
+}
+
+/**
+ * 規則動詞の未来・条件法の語幹。
+ *   parlare -> parler   cercare -> cercher   mangiare -> manger
+ *   credere -> creder   dormire -> dormir
+ * -are の a が e に変わるところと綴りの調整は、活用と同じ規則で処理する。
+ */
+export function regularFutureStem(infinitive) {
+  const group = infinitiveGroup(infinitive);
+  if (!group) throw new Error(`活用できない不定詞: ${infinitive}`);
+  const link = group === 'ire' ? 'ir' : 'er';
+  return adjust(verbStem(infinitive), link, group) + link;
+}
+
+/**
+ * 語幹から未来・条件法を作る。
+ * @param {string} stem sar / andr / parler など（語尾の直前まで）
+ * @param {'futuro'|'condizionale'} tense
+ */
+export function conjugateFromStem(stem, tense) {
+  const endings = STEM_ENDINGS[tense];
+  if (!endings) throw new Error(`語幹から作れない時制: ${tense}`);
+  return endings.map((ending) => stem + ending);
 }
 
 /** 規則動詞の過去分詞（-ato / -uto / -ito） */

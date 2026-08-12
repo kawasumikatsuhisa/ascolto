@@ -47,6 +47,7 @@ export const ERROR_TYPE_ORDER = [
   'verb:participio',
   'verb:regolarizzato',
   'verb:tempo',
+  'verb:modo',
   'verb:persona',
   'art:attacco',
   'art:genere',

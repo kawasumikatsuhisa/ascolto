@@ -12,8 +12,11 @@
 import {
   PERSONS,
   conjugateRegular,
+  conjugateFromStem,
   regularParticiple,
+  regularFutureStem,
   agreeParticiple,
+  usesFutureStem,
 } from './verbs.js';
 import { VERBS, verbByInfinitive } from './verbData.js';
 
@@ -22,6 +25,7 @@ export const VERB_SCOPES = [
   { id: 'presente', ja: '現在だけ', hint: '直説法現在' },
   { id: 'passato', ja: '現在 + 近過去', hint: 'essere / avere の選択' },
   { id: 'imperfetto', ja: '＋ 半過去', hint: '近過去との使い分け' },
+  { id: 'futuro', ja: '＋ 未来・条件法', hint: '縮む語幹（verrò / vorrei）' },
 ];
 
 /** どこまで開けるとどの時制が出るか */
@@ -29,6 +33,7 @@ const SCOPE_TENSES = {
   presente: ['presente'],
   passato: ['presente', 'passatoProssimo'],
   imperfetto: ['presente', 'passatoProssimo', 'imperfetto'],
+  futuro: ['presente', 'passatoProssimo', 'imperfetto', 'futuro', 'condizionale'],
 };
 
 export const tensesInScope = (scope) => SCOPE_TENSES[scope] ?? SCOPE_TENSES.presente;
@@ -54,8 +59,14 @@ export const NAMED_SUBJECTS = {
 export function formsOf(verb, tense) {
   const stored = verb.irregular?.[tense];
   if (stored) return stored;
+  // 未来と条件法は語幹1つから作る（sar- から sarò と sarei）
+  if (usesFutureStem(tense) && verb.fut) return conjugateFromStem(verb.fut, tense);
   return conjugateRegular(verb.inf, tense, { isc: verb.isc });
 }
+
+/** 未来・条件法で語幹が縮む動詞か */
+export const hasIrregularStem = (verb, tense) =>
+  Boolean(usesFutureStem(tense) && verb.fut);
 
 /** 過去分詞。不規則なら保存したもの、なければ規則で作る。 */
 export function participleOf(verb) {
@@ -63,7 +74,8 @@ export function participleOf(verb) {
 }
 
 /** その動詞がその時制で不規則かどうか */
-export const isIrregularIn = (verb, tense) => Boolean(verb.irregular?.[tense]);
+export const isIrregularIn = (verb, tense) =>
+  Boolean(verb.irregular?.[tense]) || hasIrregularStem(verb, tense);
 
 /**
  * 複合時制の形を組み立てる。個別には保存しない。
@@ -158,6 +170,16 @@ export function verbVariantsDetailed({ verbIndex, tense, person, agreement, scop
     add(formsOf(verb, 'presente')[person], 'verb:tempo');
   }
 
+  if (usesFutureStem(tense)) {
+    // 語幹を縮め忘れた形（verrò に対する venirò）がいちばん効く
+    if (hasIrregularStem(verb, tense)) {
+      add(conjugateRegular(verb.inf, tense, { isc: verb.isc })[person], 'verb:regolarizzato');
+    }
+    // 未来と条件法は語幹が同じなので、語尾だけで見分けることになる
+    const other = tense === 'futuro' ? 'condizionale' : 'futuro';
+    add(formsOf(verb, other)[person], 'verb:modo');
+  }
+
   if (isIrregularIn(verb, tense)) {
     // 不規則を知らずに規則活用してしまった形
     const regular = conjugateRegular(verb.inf, tense, { isc: verb.isc });
@@ -212,11 +234,20 @@ export function verbTags(verb, tense, scope) {
 
   tags.push(isIrregularIn(verb, tense) ? 'verb:irregolare' : 'verb:regolare');
   if (verb.isc && tense === 'presente') tags.push('verb:isc');
+  // 未来と条件法でつまずくのはほぼ語幹なので、そこだけ別に数える
+  if (hasIrregularStem(verb, tense)) tags.push('verb:radice');
   return tags;
 }
 
 /** 答えの下に出す説明 */
 export function verbHint(verb, tense) {
+  if (usesFutureStem(tense)) {
+    const stem = verb.fut ?? regularFutureStem(verb.inf);
+    const base = tense === 'futuro' ? '未来' : '条件法（〜だろう・〜したい）';
+    return hasIrregularStem(verb, tense)
+      ? `${base}。語幹が縮む: ${stem}-（未来も条件法も同じ語幹）`
+      : `${base}。語幹は ${stem}-`;
+  }
   if (tense === 'imperfetto') {
     const base = '習慣や状態は半過去。一回きりの出来事なら近過去';
     return isIrregularIn(verb, tense)
@@ -239,6 +270,8 @@ const TENSE_LABEL = {
   presente: '直説法現在',
   passatoProssimo: '近過去',
   imperfetto: '半過去',
+  futuro: '未来',
+  condizionale: '条件法',
 };
 
 /**
@@ -261,6 +294,9 @@ function tenseLabel(tense, scope) {
 const TIME_MARKERS = {
   passatoProssimo: ['Ieri'],
   imperfetto: ['Ogni estate', 'Di solito', 'Ogni giorno'],
+  futuro: ['Domani', 'La settimana prossima', "L'anno prossimo"],
+  // 条件法は時ではなく条件で決まるので、時の副詞ではなく前置きを置く
+  condizionale: ['Con più tempo,', 'Se possibile,'],
 };
 
 /**
@@ -273,8 +309,8 @@ export function buildVerbItem(settings, rng, randInt) {
   const verbIndex = randInt(0, VERBS.length - 1, rng);
   const verb = VERBS[verbIndex];
   const tenses = tensesInScope(settings.verbScope).filter(
-    // nascere や morire は「毎年〜していた」にならない
-    (t) => !(t === 'imperfetto' && verb.punctual),
+    // nascere や morire は「毎年〜していた」「明日〜するだろう」にならない
+    (t) => !(verb.punctual && (t === 'imperfetto' || usesFutureStem(t))),
   );
   const tense = tenses[randInt(0, tenses.length - 1, rng)];
 

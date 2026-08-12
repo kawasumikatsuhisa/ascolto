@@ -163,15 +163,23 @@ describe('型の一覧', () => {
   it('実際に出る誤答の型が、すべて並び順に載っている', () => {
     const seen = new Set();
     for (let i = 0; i < VERBS.length; i++) {
-      for (const tense of ['presente', 'passatoProssimo', 'imperfetto']) {
-        if (tense === 'imperfetto' && VERBS[i].punctual) continue;
+      for (const tense of [
+        'presente',
+        'passatoProssimo',
+        'imperfetto',
+        'futuro',
+        'condizionale',
+      ]) {
+        if (tense !== 'presente' && tense !== 'passatoProssimo' && VERBS[i].punctual) {
+          continue;
+        }
         for (let person = 0; person < 6; person++) {
           for (const v of verbVariantsDetailed({
             verbIndex: i,
             tense,
             person,
             agreement: { gender: 'm', number: 'sing' },
-            scope: 'imperfetto',
+            scope: 'futuro',
           })) {
             seen.add(v.type);
           }
@@ -205,7 +213,7 @@ describe('型の一覧', () => {
   it('出題から作った選択肢の誤答は、すべて型が付く', () => {
     for (let i = 0; i < 40; i++) {
       const r = () => ((i * 37) % 100) / 100;
-      const item = buildVerbItem({ verbScope: 'imperfetto' }, r, randInt);
+      const item = buildVerbItem({ verbScope: 'futuro' }, r, randInt);
       for (const v of verbVariantsDetailed(item.source)) {
         expect(errorTypeOf(item, v.text), `${item.prompt} / ${v.text}`).toBe(v.type);
       }
@@ -214,5 +222,39 @@ describe('型の一覧', () => {
     for (const v of articleVariantsDetailed(article.variantSpec)) {
       expect(errorTypeOf(article, v.text)).toBe(v.type);
     }
+  });
+});
+
+describe('未来・条件法の間違いの型', () => {
+  const item = (inf, tense, person = 0) => {
+    const verbIndex = VERBS.findIndex((v) => v.inf === inf);
+    const source = {
+      kind: 'verb',
+      verbIndex,
+      tense,
+      person,
+      agreement: { gender: 'm', number: 'sing' },
+      scope: 'futuro',
+    };
+    return { source, answer: formFor(VERBS[verbIndex], tense, person, {}) };
+  };
+
+  it('語幹を縮め忘れた形は regolarizzato', () => {
+    const it1 = item('venire', 'futuro');
+    expect(it1.answer).toBe('verrò');
+    expect(errorTypeOf(it1, 'venirò')).toBe('verb:regolarizzato');
+
+    const it2 = item('volere', 'condizionale');
+    expect(it2.answer).toBe('vorrei');
+    expect(errorTypeOf(it2, 'volerei')).toBe('verb:regolarizzato');
+  });
+
+  it('未来と条件法の取り違えは modo', () => {
+    const fut = item('parlare', 'futuro');
+    expect(fut.answer).toBe('parlerò');
+    expect(errorTypeOf(fut, 'parlerei')).toBe('verb:modo');
+
+    const cond = item('parlare', 'condizionale');
+    expect(errorTypeOf(cond, 'parlerò')).toBe('verb:modo');
   });
 });

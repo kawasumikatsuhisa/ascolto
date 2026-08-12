@@ -6,6 +6,8 @@ import {
   regularParticiple,
   agreeParticiple,
   infinitiveGroup,
+  regularFutureStem,
+  conjugateFromStem,
 } from './verbs.js';
 
 describe('-are 規則動詞（parlare）', () => {
@@ -294,5 +296,48 @@ describe('全体の健全性', () => {
     expect(() => conjugateRegular('parlare', 'nope')).toThrow();
     expect(() => conjugateRegular('boh', 'presente')).toThrow();
     expect(() => regularParticiple('boh')).toThrow();
+  });
+});
+
+describe('未来・条件法は語幹1つから作る', () => {
+  it('規則動詞の語幹', () => {
+    expect(regularFutureStem('parlare')).toBe('parler');
+    expect(regularFutureStem('credere')).toBe('creder');
+    expect(regularFutureStem('dormire')).toBe('dormir');
+    expect(regularFutureStem('cercare')).toBe('cercher');
+    expect(regularFutureStem('mangiare')).toBe('manger');
+    expect(regularFutureStem('studiare')).toBe('studier');
+  });
+
+  it('同じ語幹から未来と条件法の両方が出る', () => {
+    expect(conjugateFromStem('sar', 'futuro')).toEqual([
+      'sarò',
+      'sarai',
+      'sarà',
+      'saremo',
+      'sarete',
+      'saranno',
+    ]);
+    expect(conjugateFromStem('sar', 'condizionale')).toEqual([
+      'sarei',
+      'saresti',
+      'sarebbe',
+      'saremmo',
+      'sareste',
+      'sarebbero',
+    ]);
+  });
+
+  it('語幹が違うだけで語尾は活用の種類によらない', () => {
+    for (const tense of ['futuro', 'condizionale']) {
+      for (const inf of ['parlare', 'credere', 'dormire']) {
+        const fromStem = conjugateFromStem(regularFutureStem(inf), tense);
+        expect(conjugateRegular(inf, tense)).toEqual(fromStem);
+      }
+    }
+  });
+
+  it('知らない時制は例外にする', () => {
+    expect(() => conjugateFromStem('sar', 'presente')).toThrow();
   });
 });

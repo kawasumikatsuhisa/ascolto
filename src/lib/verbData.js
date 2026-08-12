@@ -1,8 +1,9 @@
 /**
  * 動詞のデータ。
  *
- * 持つのは次の4つだけ。活用表は保存しない。
+ * 持つのは次の5つだけ。活用表は保存しない。
  *   - 不規則な単純形だけ（規則どおりの時制は書かない）
+ *   - 未来・条件法の語幹（fut）。この2つは語幹が同じなので1つで12形ぶん
  *   - 過去分詞。規則どおり（-ato/-uto/-ito）なら null にして生成させる
  *   - 複合時制で avere と essere のどちらを取るか
  *   - essere を取るなら過去分詞が主語と性数一致する（agree）
@@ -17,10 +18,12 @@
  * @property {string} ja 訳
  * @property {string} tail 例文の後半
  * @property {'avere'|'essere'} aux 複合時制で取る助動詞
+ * @property {string} [fut] 不規則な未来・条件法の語幹（sarò と sarei の sar-）
  * @property {string|null} [pp] 不規則な過去分詞。規則どおりなら省略
  * @property {boolean} [isc] -ire の -isc- 型
  * @property {Record<string,string[]>} [irregular] 不規則な単純形
- * @property {boolean} [punctual] 習慣として繰り返せない動詞（半過去では出さない）
+ * @property {boolean} [punctual] 一回きりの出来事にしかならない動詞
+ *   （「毎年生まれていた」「明日死ぬだろう」が変なので半過去・未来では出さない）
  */
 
 /** @type {VerbEntry[]} */
@@ -31,6 +34,7 @@ export const VERBS = [
     ja: '〜である',
     tail: 'in ritardo',
     aux: 'essere',
+    fut: 'sar',
     pp: 'stato',
     irregular: {
       presente: ['sono', 'sei', 'è', 'siamo', 'siete', 'sono'],
@@ -42,6 +46,7 @@ export const VERBS = [
     ja: '持っている',
     tail: 'fame',
     aux: 'avere',
+    fut: 'avr',
     irregular: {
       presente: ['ho', 'hai', 'ha', 'abbiamo', 'avete', 'hanno'],
     },
@@ -51,6 +56,7 @@ export const VERBS = [
     ja: 'する、作る',
     tail: 'colazione',
     aux: 'avere',
+    fut: 'far',
     pp: 'fatto',
     irregular: {
       presente: ['faccio', 'fai', 'fa', 'facciamo', 'fate', 'fanno'],
@@ -63,6 +69,7 @@ export const VERBS = [
     ja: '行く',
     tail: 'al cinema',
     aux: 'essere',
+    fut: 'andr',
     irregular: {
       presente: ['vado', 'vai', 'va', 'andiamo', 'andate', 'vanno'],
     },
@@ -72,6 +79,7 @@ export const VERBS = [
     ja: 'いる、調子が〜だ',
     tail: 'bene',
     aux: 'essere',
+    fut: 'star',
     irregular: {
       presente: ['sto', 'stai', 'sta', 'stiamo', 'state', 'stanno'],
     },
@@ -81,6 +89,7 @@ export const VERBS = [
     ja: '与える',
     tail: 'una mano',
     aux: 'avere',
+    fut: 'dar',
     irregular: {
       presente: ['do', 'dai', 'dà', 'diamo', 'date', 'danno'],
     },
@@ -90,6 +99,7 @@ export const VERBS = [
     ja: '言う',
     tail: 'la verità',
     aux: 'avere',
+    // dirò は規則どおり（dir- + ò）なので語幹は持たせない
     pp: 'detto',
     irregular: {
       presente: ['dico', 'dici', 'dice', 'diciamo', 'dite', 'dicono'],
@@ -101,6 +111,7 @@ export const VERBS = [
     ja: '〜できる',
     tail: 'aiutare',
     aux: 'avere',
+    fut: 'potr',
     irregular: {
       presente: ['posso', 'puoi', 'può', 'possiamo', 'potete', 'possono'],
     },
@@ -110,6 +121,7 @@ export const VERBS = [
     ja: '〜したい',
     tail: 'un caffè',
     aux: 'avere',
+    fut: 'vorr',
     irregular: {
       presente: ['voglio', 'vuoi', 'vuole', 'vogliamo', 'volete', 'vogliono'],
     },
@@ -119,6 +131,7 @@ export const VERBS = [
     ja: '〜しなければならない',
     tail: 'studiare',
     aux: 'avere',
+    fut: 'dovr',
     irregular: {
       presente: ['devo', 'devi', 'deve', 'dobbiamo', 'dovete', 'devono'],
     },
@@ -128,6 +141,7 @@ export const VERBS = [
     ja: '知っている',
     tail: "l'indirizzo",
     aux: 'avere',
+    fut: 'sapr',
     irregular: {
       presente: ['so', 'sai', 'sa', 'sappiamo', 'sapete', 'sanno'],
     },
@@ -137,6 +151,7 @@ export const VERBS = [
     ja: '来る',
     tail: 'con noi',
     aux: 'essere',
+    fut: 'verr',
     pp: 'venuto', // 規則形は venito になってしまう
     irregular: {
       presente: ['vengo', 'vieni', 'viene', 'veniamo', 'venite', 'vengono'],
@@ -156,6 +171,7 @@ export const VERBS = [
     ja: '飲む',
     tail: 'un bicchiere di vino',
     aux: 'avere',
+    fut: 'berr',
     pp: 'bevuto',
     irregular: {
       presente: ['bevo', 'bevi', 'beve', 'beviamo', 'bevete', 'bevono'],
@@ -167,6 +183,7 @@ export const VERBS = [
     ja: 'とどまる',
     tail: 'a casa',
     aux: 'essere',
+    fut: 'rimarr',
     pp: 'rimasto',
     irregular: {
       presente: [
@@ -184,6 +201,7 @@ export const VERBS = [
     ja: '保つ、持っている',
     tail: 'le chiavi',
     aux: 'avere',
+    fut: 'terr',
     irregular: {
       presente: ['tengo', 'tieni', 'tiene', 'teniamo', 'tenete', 'tengono'],
     },
@@ -237,14 +255,14 @@ export const VERBS = [
     tail: 'di fame',
     aux: 'essere',
     pp: 'morto',
-    punctual: true, // 「毎年〜していた」にならないので半過去では出さない
+    punctual: true, // 一回きりの出来事。半過去・未来では出さない
     irregular: {
       presente: ['muoio', 'muori', 'muore', 'moriamo', 'morite', 'muoiono'],
     },
   },
 
   // ------------------------------- 現在形は規則どおりだが過去分詞が不規則
-  { inf: 'vedere', ja: '見る', tail: 'un film', aux: 'avere', pp: 'visto' },
+  { inf: 'vedere', ja: '見る', tail: 'un film', aux: 'avere', pp: 'visto', fut: 'vedr' },
   { inf: 'prendere', ja: '取る、乗る', tail: 'il treno', aux: 'avere', pp: 'preso' },
   { inf: 'scrivere', ja: '書く', tail: 'una mail', aux: 'avere', pp: 'scritto' },
   { inf: 'leggere', ja: '読む', tail: 'il giornale', aux: 'avere', pp: 'letto' },

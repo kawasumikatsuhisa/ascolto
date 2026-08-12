@@ -11,7 +11,12 @@ import {
   buildVerbItem,
   NAMED_SUBJECTS,
 } from './verbDrill.js';
-import { PERSONS, conjugateRegular, regularParticiple } from './verbs.js';
+import {
+  PERSONS,
+  conjugateRegular,
+  regularParticiple,
+  regularFutureStem,
+} from './verbs.js';
 import { generateItem, CATEGORIES, describeTag, tagGroup } from './generator.js';
 import { CHOICE_COUNT } from './choices.js';
 import { DEFAULT_SETTINGS } from './storage.js';
@@ -534,5 +539,118 @@ describe('見出しに答えを書かない', () => {
       seen.add(item.promptNote.split(' ·')[0]);
     }
     expect(seen).toContain('近過去');
+  });
+});
+
+describe('未来・条件法', () => {
+  const randInt = (min, max, rng) => min + Math.floor((max - min + 1) * rng());
+  const verb = (inf) => VERBS.find((v) => v.inf === inf);
+
+  it('保存した語幹から未来と条件法の両方が出る', () => {
+    expect(formsOf(verb('essere'), 'futuro')[0]).toBe('sarò');
+    expect(formsOf(verb('essere'), 'condizionale')[0]).toBe('sarei');
+    expect(formsOf(verb('venire'), 'futuro')[2]).toBe('verrà');
+    expect(formsOf(verb('volere'), 'condizionale')[0]).toBe('vorrei');
+    expect(formsOf(verb('vedere'), 'futuro')[0]).toBe('vedrò');
+  });
+
+  it('語幹を持たない動詞は規則どおり', () => {
+    expect(formsOf(verb('parlare'), 'futuro')[0]).toBe('parlerò');
+    expect(formsOf(verb('capire'), 'futuro')[0]).toBe('capirò');
+    expect(formsOf(verb('cercare'), 'condizionale')[0]).toBe('cercherei');
+  });
+
+  it('dirò は規則どおりなので語幹を持たせない', () => {
+    expect(verb('dire').fut).toBeUndefined();
+    expect(formsOf(verb('dire'), 'futuro')[0]).toBe('dirò');
+  });
+
+  it('主要な不規則語幹を押さえてある', () => {
+    const expected = {
+      essere: 'sar',
+      avere: 'avr',
+      fare: 'far',
+      andare: 'andr',
+      stare: 'star',
+      dare: 'dar',
+      potere: 'potr',
+      volere: 'vorr',
+      dovere: 'dovr',
+      sapere: 'sapr',
+      venire: 'verr',
+      bere: 'berr',
+      rimanere: 'rimarr',
+      tenere: 'terr',
+      vedere: 'vedr',
+    };
+    for (const [inf, stem] of Object.entries(expected)) {
+      expect(verb(inf).fut, inf).toBe(stem);
+    }
+  });
+
+  it('規則で作れる語幹は保存しない', () => {
+    for (const v of VERBS) {
+      if (!v.fut) continue;
+      expect(v.fut, v.inf).not.toBe(regularFutureStem(v.inf));
+    }
+  });
+
+  it('語幹を縮め忘れた形が誤答に入る', () => {
+    const verbIndex = VERBS.findIndex((v) => v.inf === 'venire');
+    const wrong = verbVariants({
+      verbIndex,
+      tense: 'futuro',
+      person: 0,
+      agreement: {},
+      scope: 'futuro',
+    });
+    expect(wrong).toContain('venirò');
+    expect(wrong[0]).toBe('venirò');
+  });
+
+  it('未来と条件法が互いの誤答になる', () => {
+    const verbIndex = VERBS.findIndex((v) => v.inf === 'parlare');
+    const spec = { verbIndex, person: 0, agreement: {}, scope: 'futuro' };
+    expect(verbVariants({ ...spec, tense: 'futuro' })).toContain('parlerei');
+    expect(verbVariants({ ...spec, tense: 'condizionale' })).toContain('parlerò');
+  });
+
+  it('未来まで開けないと未来は出ない', () => {
+    for (let i = 0; i < 120; i++) {
+      const r = () => ((i * 7919) % 1000) / 1000;
+      const item = buildVerbItem({ verbScope: 'imperfetto' }, r, randInt);
+      expect(['presente', 'passatoProssimo', 'imperfetto']).toContain(
+        item.source.tense,
+      );
+    }
+  });
+
+  it('未来まで開けると未来も条件法も出る', () => {
+    const seen = new Set();
+    for (let i = 0; i < 300; i++) {
+      const r = () => ((i * 7919) % 1000) / 1000;
+      seen.add(buildVerbItem({ verbScope: 'futuro' }, r, randInt).source.tense);
+    }
+    expect(seen).toContain('futuro');
+    expect(seen).toContain('condizionale');
+  });
+
+  it('一回きりの動詞は未来にも出さない', () => {
+    for (let i = 0; i < 400; i++) {
+      const r = () => ((i * 104729) % 1000) / 1000;
+      const item = buildVerbItem({ verbScope: 'futuro' }, r, randInt);
+      const v = VERBS[item.source.verbIndex];
+      if (!v.punctual) continue;
+      expect(['presente', 'passatoProssimo']).toContain(item.source.tense);
+    }
+  });
+
+  it('条件法の文には時ではなく条件の前置きがつく', () => {
+    for (let i = 0; i < 300; i++) {
+      const r = () => ((i * 7919) % 1000) / 1000;
+      const item = buildVerbItem({ verbScope: 'futuro' }, r, randInt);
+      if (item.source.tense !== 'condizionale') continue;
+      expect(item.prompt).toMatch(/^(Con più tempo,|Se possibile,) /);
+    }
   });
 });
