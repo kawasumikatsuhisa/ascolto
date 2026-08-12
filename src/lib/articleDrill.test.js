@@ -195,6 +195,32 @@ describe('間違いの型のタグ', () => {
 });
 
 describe('冠詞の出題', () => {
+  it('名詞の日本語訳を必ず添える', () => {
+    const rng = seeded(11);
+    for (let i = 0; i < 400; i++) {
+      const item = generateItem(articlesOnly, {}, { rng });
+      const noun = NOUNS[item.source.index];
+      expect(item.promptGloss).toBe(noun.ja);
+      expect(item.promptGloss).toBeTruthy();
+    }
+  });
+
+  it('見出しは文法の分類だけにして、訳を混ぜない', () => {
+    const rng = seeded(12);
+    const notes = new Set();
+    for (let i = 0; i < 400; i++) {
+      const item = generateItem(articlesOnly, {}, { rng });
+      notes.add(item.promptNote);
+      expect(item.promptNote).not.toContain(item.promptGloss);
+    }
+    // 前置詞つきは意味を添える。名詞とつなげると「目の上に」のような
+    // 言わない言い方ができるので、こちら側に置いてある
+    expect(notes).toContain('in（〜の中に）+ 定冠詞');
+    expect(notes).toContain('di（〜の）+ 定冠詞');
+    expect(notes).toContain('定冠詞（単数）');
+    expect(notes).toContain('不定冠詞');
+  });
+
   it('答えが規則から出る形と一致する', () => {
     const rng = seeded(5);
     for (let i = 0; i < 600; i++) {

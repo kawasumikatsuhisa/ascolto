@@ -250,6 +250,8 @@ export default function DrillScreen({
               <Wrapped text={item.prompt} />
             )}
           </p>
+          {/* 語の意味。見出しではなく語のすぐ下に置く（冠詞の問題で使う） */}
+          {item.promptGloss && <p className="prompt-gloss">{item.promptGloss}</p>}
 
           {revealed && (
             <div className="answer-block">

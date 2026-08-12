@@ -124,6 +124,21 @@ export function articleHint({ kind, number, onset, gender, preposition }) {
 }
 
 /**
+ * 前置詞の意味。見出しに添える。
+ *
+ * 名詞の訳とつなげて「砂糖の中に」とはしない。前置詞は形を問うために
+ * 無作為に選んでいるので、「目の上に」「友だちの中に」のような、
+ * 言わない言い方ができてしまう。
+ */
+const PREPOSITION_JA = {
+  di: '〜の',
+  a: '〜に',
+  da: '〜から',
+  in: '〜の中に',
+  su: '〜の上に',
+};
+
+/**
  * 冠詞の問題を1つ作る。
  * @param {() => number} rng
  * @param {(arr:any[], rng:() => number) => any} pick
@@ -153,7 +168,7 @@ export function buildArticleItem(rng, pick, randInt) {
   );
 
   const label = preposition
-    ? `${preposition} + 定冠詞`
+    ? `${preposition}（${PREPOSITION_JA[preposition]}）+ 定冠詞`
     : kind === 'indefinite'
       ? '不定冠詞'
       : `定冠詞（${number === 'plur' ? '複数' : '単数'}）`;
@@ -164,7 +179,10 @@ export function buildArticleItem(rng, pick, randInt) {
     source: { kind: 'article', index, number, articleKind: kind, preposition },
     reverse: false,
     prompt: `___ ${word}`,
-    promptNote: `${label} · ${noun.ja}`,
+    promptNote: label,
+    // 名詞の訳は文法の見出しに混ぜず、語の下に置く。
+    // 「不定冠詞 · 公演」だと分類の一部に見えて、訳として読まれない
+    promptGloss: noun.ja,
     answer: article,
     answerNote: articleHint(spec),
     speech: join(article, word),

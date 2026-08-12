@@ -397,6 +397,17 @@ button {
   font-size: 0.85rem;
 }
 
+/* 語の意味。文法の見出しより少し強く、答えよりは弱く */
+.prompt-gloss {
+  margin: -4px 0 0;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+:root[data-short] .prompt-gloss {
+  font-size: 0.85rem;
+}
+
 .prompt {
   margin: 0;
   font-weight: 700;
