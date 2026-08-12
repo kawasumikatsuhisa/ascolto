@@ -15,6 +15,7 @@ import {
   conjugateFromStem,
   regularParticiple,
   regularFutureStem,
+  congiuntiveFromPresente,
   agreeParticiple,
   usesFutureStem,
 } from './verbs.js';
@@ -26,6 +27,7 @@ export const VERB_SCOPES = [
   { id: 'passato', ja: '現在 + 近過去', hint: 'essere / avere の選択' },
   { id: 'imperfetto', ja: '＋ 半過去', hint: '近過去との使い分け' },
   { id: 'futuro', ja: '＋ 未来・条件法', hint: '縮む語幹（verrò / vorrei）' },
+  { id: 'congiuntivo', ja: '＋ 接続法現在', hint: 'Penso che 〜 のあと' },
 ];
 
 /** どこまで開けるとどの時制が出るか */
@@ -34,6 +36,14 @@ const SCOPE_TENSES = {
   passato: ['presente', 'passatoProssimo'],
   imperfetto: ['presente', 'passatoProssimo', 'imperfetto'],
   futuro: ['presente', 'passatoProssimo', 'imperfetto', 'futuro', 'condizionale'],
+  congiuntivo: [
+    'presente',
+    'passatoProssimo',
+    'imperfetto',
+    'futuro',
+    'condizionale',
+    'congPresente',
+  ],
 };
 
 export const tensesInScope = (scope) => SCOPE_TENSES[scope] ?? SCOPE_TENSES.presente;
@@ -61,8 +71,16 @@ export function formsOf(verb, tense) {
   if (stored) return stored;
   // 未来と条件法は語幹1つから作る（sar- から sarò と sarei）
   if (usesFutureStem(tense) && verb.fut) return conjugateFromStem(verb.fut, tense);
+  // 接続法現在は不規則動詞でも直説法現在から作れる（vengo -> venga）
+  if (tense === 'congPresente' && hasIrregularCongiuntivo(verb)) {
+    return congiuntiveFromPresente(formsOf(verb, 'presente'), { stem: verb.cong });
+  }
   return conjugateRegular(verb.inf, tense, { isc: verb.isc });
 }
+
+/** 接続法現在が規則どおりにならない動詞か（現在形が不規則ならそうなる） */
+export const hasIrregularCongiuntivo = (verb) =>
+  Boolean(verb.cong || verb.irregular?.presente);
 
 /** 未来・条件法で語幹が縮む動詞か */
 export const hasIrregularStem = (verb, tense) =>
@@ -75,7 +93,9 @@ export function participleOf(verb) {
 
 /** その動詞がその時制で不規則かどうか */
 export const isIrregularIn = (verb, tense) =>
-  Boolean(verb.irregular?.[tense]) || hasIrregularStem(verb, tense);
+  Boolean(verb.irregular?.[tense]) ||
+  hasIrregularStem(verb, tense) ||
+  (tense === 'congPresente' && hasIrregularCongiuntivo(verb));
 
 /**
  * 複合時制の形を組み立てる。個別には保存しない。
@@ -170,6 +190,15 @@ export function verbVariantsDetailed({ verbIndex, tense, person, agreement, scop
     add(formsOf(verb, 'presente')[person], 'verb:tempo');
   }
 
+  // 接続法のところで直説法を使ってしまう（Penso che tu sei）のがいちばん多い
+  if (tense === 'congPresente') {
+    add(formsOf(verb, 'presente')[person], 'verb:indicativo');
+    // -are は -i、-ere と -ire は -a。この取り違え（vada を vadi にしてしまう）。
+    // 不定詞から規則活用した形（fare なら fi）は誰も書かないので出さない
+    const swapped = swapCongEnding(formsOf(verb, tense)[person]);
+    if (swapped) add(swapped, 'verb:regolarizzato');
+  }
+
   if (usesFutureStem(tense)) {
     // 語幹を縮め忘れた形（verrò に対する venirò）がいちばん効く
     if (hasIrregularStem(verb, tense)) {
@@ -180,7 +209,7 @@ export function verbVariantsDetailed({ verbIndex, tense, person, agreement, scop
     add(formsOf(verb, other)[person], 'verb:modo');
   }
 
-  if (isIrregularIn(verb, tense)) {
+  if (isIrregularIn(verb, tense) && tense !== 'congPresente') {
     // 不規則を知らずに規則活用してしまった形
     const regular = conjugateRegular(verb.inf, tense, { isc: verb.isc });
     add(regular[person], 'verb:regolarizzato');
@@ -195,6 +224,21 @@ export function verbVariantsDetailed({ verbIndex, tense, person, agreement, scop
   }
 
   return dedupe(out, correct);
+}
+
+/**
+ * 接続法の語尾を取り違えた形。単数と3人称複数にしか効かないので、
+ * noi（-iamo）と voi（-iate）では null を返す。
+ */
+function swapCongEnding(form) {
+  const swapped = form.endsWith('a')
+    ? `${form.slice(0, -1)}i`
+    : form.endsWith('i')
+      ? `${form.slice(0, -1)}a`
+      : null;
+  // 語幹が i で終わる語（faccia -> faccii、dia -> dii）は綴りとして成り立たない。
+  // ありえない形を選択肢に混ぜると、消去法で当てられてしまう
+  return swapped && !/ii/.test(swapped) ? swapped : null;
 }
 
 /** 空と重複を落とす。先に入れたほうの型を残す。 */
@@ -241,6 +285,12 @@ export function verbTags(verb, tense, scope) {
 
 /** 答えの下に出す説明 */
 export function verbHint(verb, tense) {
+  if (tense === 'congPresente') {
+    const base = 'Penso che / Voglio che のあとは接続法';
+    return isIrregularIn(verb, tense)
+      ? `${base}（${verb.inf}: ${formsOf(verb, tense)[0]}）`
+      : `${base}。-are は -i、-ere と -ire は -a`;
+  }
   if (usesFutureStem(tense)) {
     const stem = verb.fut ?? regularFutureStem(verb.inf);
     const base = tense === 'futuro' ? '未来' : '条件法（〜だろう・〜したい）';
@@ -272,6 +322,7 @@ const TENSE_LABEL = {
   imperfetto: '半過去',
   futuro: '未来',
   condizionale: '条件法',
+  congPresente: '接続法現在',
 };
 
 /**
@@ -297,7 +348,12 @@ const TIME_MARKERS = {
   futuro: ['Domani', 'La settimana prossima', "L'anno prossimo"],
   // 条件法は時ではなく条件で決まるので、時の副詞ではなく前置きを置く
   condizionale: ['Con più tempo,', 'Se possibile,'],
+  // 接続法は前の主節が呼び出す。che のあとに来ることが形と結びつくように
+  congPresente: ['Penso che', 'Credo che', 'Voglio che', 'Spero che'],
 };
+
+/** 接続法の従属節に立てる人称（io と noi は主節と同じ人になってしまう） */
+const CONG_PERSONS = [1, 2, 4, 5];
 
 /**
  * 動詞の問題を1つ作る。
@@ -309,8 +365,13 @@ export function buildVerbItem(settings, rng, randInt) {
   const verbIndex = randInt(0, VERBS.length - 1, rng);
   const verb = VERBS[verbIndex];
   const tenses = tensesInScope(settings.verbScope).filter(
-    // nascere や morire は「毎年〜していた」「明日〜するだろう」にならない
-    (t) => !(verb.punctual && (t === 'imperfetto' || usesFutureStem(t))),
+    // nascere や morire は「毎年〜していた」「明日〜するだろう」にならないし、
+    // 「〜してほしい」の対象にもしない
+    (t) =>
+      !(
+        verb.punctual &&
+        (t === 'imperfetto' || t === 'congPresente' || usesFutureStem(t))
+      ),
   );
   const tense = tenses[randInt(0, tenses.length - 1, rng)];
 
@@ -321,7 +382,13 @@ export function buildVerbItem(settings, rng, randInt) {
     ? Object.values(NAMED_SUBJECTS)[randInt(0, 3, rng)]
     : null;
 
-  const person = named ? named.person : randInt(0, PERSONS.length - 1, rng);
+  // 接続法の主語は主節（Penso / Voglio）と別人でないといけない。
+  // 同じ人なら「Penso di essere」と不定詞になるので、io と noi は使わない。
+  const person = named
+    ? named.person
+    : tense === 'congPresente'
+      ? CONG_PERSONS[randInt(0, CONG_PERSONS.length - 1, rng)]
+      : randInt(0, PERSONS.length - 1, rng);
   const agreement = named
     ? { gender: named.gender, number: named.number }
     : { gender: 'm', number: person === 3 || person === 4 || person === 5 ? 'plur' : 'sing' };

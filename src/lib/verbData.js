@@ -4,6 +4,7 @@
  * 持つのは次の5つだけ。活用表は保存しない。
  *   - 不規則な単純形だけ（規則どおりの時制は書かない）
  *   - 未来・条件法の語幹（fut）。この2つは語幹が同じなので1つで12形ぶん
+ *   - 接続法現在の語幹（cong）。ふつうは現在形から作れるので6語だけ
  *   - 過去分詞。規則どおり（-ato/-uto/-ito）なら null にして生成させる
  *   - 複合時制で avere と essere のどちらを取るか
  *   - essere を取るなら過去分詞が主語と性数一致する（agree）
@@ -19,6 +20,7 @@
  * @property {string} tail 例文の後半
  * @property {'avere'|'essere'} aux 複合時制で取る助動詞
  * @property {string} [fut] 不規則な未来・条件法の語幹（sarò と sarei の sar-）
+ * @property {string} [cong] 接続法現在の語幹。現在形から作れない6語だけ
  * @property {string|null} [pp] 不規則な過去分詞。規則どおりなら省略
  * @property {boolean} [isc] -ire の -isc- 型
  * @property {Record<string,string[]>} [irregular] 不規則な単純形
@@ -34,6 +36,7 @@ export const VERBS = [
     ja: '〜である',
     tail: 'in ritardo',
     aux: 'essere',
+    cong: 'si', // sia は現在形から作れない
     fut: 'sar',
     pp: 'stato',
     irregular: {
@@ -46,6 +49,7 @@ export const VERBS = [
     ja: '持っている',
     tail: 'fame',
     aux: 'avere',
+    cong: 'abbi', // abbia は現在形から作れない
     fut: 'avr',
     irregular: {
       presente: ['ho', 'hai', 'ha', 'abbiamo', 'avete', 'hanno'],
@@ -79,6 +83,7 @@ export const VERBS = [
     ja: 'いる、調子が〜だ',
     tail: 'bene',
     aux: 'essere',
+    cong: 'sti', // sto からは作れない
     fut: 'star',
     irregular: {
       presente: ['sto', 'stai', 'sta', 'stiamo', 'state', 'stanno'],
@@ -89,6 +94,7 @@ export const VERBS = [
     ja: '与える',
     tail: 'una mano',
     aux: 'avere',
+    cong: 'di', // do からは作れない
     fut: 'dar',
     irregular: {
       presente: ['do', 'dai', 'dà', 'diamo', 'date', 'danno'],
@@ -131,6 +137,7 @@ export const VERBS = [
     ja: '〜しなければならない',
     tail: 'studiare',
     aux: 'avere',
+    cong: 'debb', // devo からは deva になる。教わるのは debba のほう
     fut: 'dovr',
     irregular: {
       presente: ['devo', 'devi', 'deve', 'dobbiamo', 'dovete', 'devono'],
@@ -141,6 +148,7 @@ export const VERBS = [
     ja: '知っている',
     tail: "l'indirizzo",
     aux: 'avere',
+    cong: 'sappi', // so からは作れない
     fut: 'sapr',
     irregular: {
       presente: ['so', 'sai', 'sa', 'sappiamo', 'sapete', 'sanno'],

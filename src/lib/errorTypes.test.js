@@ -169,6 +169,7 @@ describe('型の一覧', () => {
         'imperfetto',
         'futuro',
         'condizionale',
+        'congPresente',
       ]) {
         if (tense !== 'presente' && tense !== 'passatoProssimo' && VERBS[i].punctual) {
           continue;
@@ -179,7 +180,7 @@ describe('型の一覧', () => {
             tense,
             person,
             agreement: { gender: 'm', number: 'sing' },
-            scope: 'futuro',
+            scope: 'congiuntivo',
           })) {
             seen.add(v.type);
           }
@@ -213,7 +214,7 @@ describe('型の一覧', () => {
   it('出題から作った選択肢の誤答は、すべて型が付く', () => {
     for (let i = 0; i < 40; i++) {
       const r = () => ((i * 37) % 100) / 100;
-      const item = buildVerbItem({ verbScope: 'futuro' }, r, randInt);
+      const item = buildVerbItem({ verbScope: 'congiuntivo' }, r, randInt);
       for (const v of verbVariantsDetailed(item.source)) {
         expect(errorTypeOf(item, v.text), `${item.prompt} / ${v.text}`).toBe(v.type);
       }
@@ -256,5 +257,30 @@ describe('未来・条件法の間違いの型', () => {
 
     const cond = item('parlare', 'condizionale');
     expect(errorTypeOf(cond, 'parlerò')).toBe('verb:modo');
+  });
+});
+
+describe('接続法の間違いの型', () => {
+  it('接続法のところで直説法を選んだら indicativo', () => {
+    const item = verbItem({
+      inf: 'essere',
+      tense: 'congPresente',
+      person: 1,
+      scope: 'congiuntivo',
+    });
+    expect(item.answer).toBe('sia');
+    expect(errorTypeOf(item, 'sei')).toBe('verb:indicativo');
+  });
+
+  it('-are の語尾を当てはめてしまった形は regolarizzato', () => {
+    const item = verbItem({
+      inf: 'andare',
+      tense: 'congPresente',
+      person: 1,
+      scope: 'congiuntivo',
+    });
+    expect(item.answer).toBe('vada');
+    // 学習者が書くのは andi ではなく vadi のほう（語幹は不規則を覚えている）
+    expect(errorTypeOf(item, 'vadi')).toBe('verb:regolarizzato');
   });
 });

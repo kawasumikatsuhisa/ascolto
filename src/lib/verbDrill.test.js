@@ -654,3 +654,138 @@ describe('未来・条件法', () => {
     }
   });
 });
+
+describe('接続法現在', () => {
+  const randInt = (min, max, rng) => min + Math.floor((max - min + 1) * rng());
+  const verb = (inf) => VERBS.find((v) => v.inf === inf);
+  const cong = (inf) => formsOf(verb(inf), 'congPresente');
+
+  // 51語ぶん全部を表で押さえる。生成に頼っている以上、ここがずれたら
+  // どこかの規則が壊れている
+  it.each([
+    ['essere', 'sia sia sia siamo siate siano'],
+    ['avere', 'abbia abbia abbia abbiamo abbiate abbiano'],
+    ['fare', 'faccia faccia faccia facciamo facciate facciano'],
+    ['andare', 'vada vada vada andiamo andiate vadano'],
+    ['stare', 'stia stia stia stiamo stiate stiano'],
+    ['dare', 'dia dia dia diamo diate diano'],
+    ['dire', 'dica dica dica diciamo diciate dicano'],
+    ['potere', 'possa possa possa possiamo possiate possano'],
+    ['volere', 'voglia voglia voglia vogliamo vogliate vogliano'],
+    ['dovere', 'debba debba debba dobbiamo dobbiate debbano'],
+    ['sapere', 'sappia sappia sappia sappiamo sappiate sappiano'],
+    ['venire', 'venga venga venga veniamo veniate vengano'],
+    ['uscire', 'esca esca esca usciamo usciate escano'],
+    ['bere', 'beva beva beva beviamo beviate bevano'],
+    ['rimanere', 'rimanga rimanga rimanga rimaniamo rimaniate rimangano'],
+    ['tenere', 'tenga tenga tenga teniamo teniate tengano'],
+    ['scegliere', 'scelga scelga scelga scegliamo scegliate scelgano'],
+    ['piacere', 'piaccia piaccia piaccia piacciamo piacciate piacciano'],
+    ['salire', 'salga salga salga saliamo saliate salgano'],
+    ['morire', 'muoia muoia muoia moriamo moriate muoiano'],
+    ['parlare', 'parli parli parli parliamo parliate parlino'],
+    ['cercare', 'cerchi cerchi cerchi cerchiamo cerchiate cerchino'],
+    ['studiare', 'studi studi studi studiamo studiate studino'],
+    ['capire', 'capisca capisca capisca capiamo capiate capiscano'],
+    ['prendere', 'prenda prenda prenda prendiamo prendiate prendano'],
+    ['dormire', 'dorma dorma dorma dormiamo dormiate dormano'],
+  ])('%s', (inf, expected) => {
+    expect(cong(inf).join(' ')).toBe(expected);
+  });
+
+  it('接続法の活用表は保存しない', () => {
+    for (const v of VERBS) {
+      expect(v.irregular?.congPresente, v.inf).toBeUndefined();
+    }
+  });
+
+  it('語幹を持たせるのは現在形から作れない6語だけ', () => {
+    const withStem = VERBS.filter((v) => v.cong).map((v) => v.inf);
+    expect(withStem.sort()).toEqual(
+      ['avere', 'dare', 'dovere', 'essere', 'sapere', 'stare'].sort(),
+    );
+  });
+
+  it('直説法を使ってしまった形が誤答の先頭に入る', () => {
+    const verbIndex = VERBS.findIndex((v) => v.inf === 'essere');
+    const wrong = verbVariants({
+      verbIndex,
+      tense: 'congPresente',
+      person: 1,
+      agreement: {},
+      scope: 'congiuntivo',
+    });
+    expect(wrong[0]).toBe('sei');
+  });
+
+  it('接続法まで開けないと出ない', () => {
+    for (let i = 0; i < 150; i++) {
+      const r = () => ((i * 7919) % 1000) / 1000;
+      const item = buildVerbItem({ verbScope: 'futuro' }, r, randInt);
+      expect(item.source.tense).not.toBe('congPresente');
+    }
+  });
+
+  it('主語に io と noi を使わない（Penso che io とは言わない）', () => {
+    let seen = 0;
+    for (let i = 0; i < 400; i++) {
+      const r = () => ((i * 104729) % 1000) / 1000;
+      const item = buildVerbItem({ verbScope: 'congiuntivo' }, r, randInt);
+      if (item.source.tense !== 'congPresente') continue;
+      seen++;
+      expect([1, 2, 4, 5]).toContain(item.source.person);
+      expect(item.prompt).toMatch(/^(Penso|Credo|Voglio|Spero) che /);
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
+});
+
+describe('接続法の誤答', () => {
+  const variants = (inf, person) =>
+    verbVariants({
+      verbIndex: VERBS.findIndex((v) => v.inf === inf),
+      tense: 'congPresente',
+      person,
+      agreement: {},
+      scope: 'congiuntivo',
+    });
+
+  it('-a と -i の取り違えを混ぜる', () => {
+    expect(variants('andare', 1)).toContain('vadi');
+    expect(variants('parlare', 2)).toContain('parla');
+  });
+
+  it('誤答はどれも実在の形か、語尾を1つ替えただけの形', () => {
+    for (const v of VERBS) {
+      for (let person = 0; person < PERSONS.length; person++) {
+        const real = new Set([
+          ...formsOf(v, 'presente'),
+          ...formsOf(v, 'congPresente'),
+        ]);
+        // 語尾を -a と -i で取り違えた形（vada -> vadi）まで
+        const swapped = new Set(
+          formsOf(v, 'congPresente').flatMap((f) =>
+            f.endsWith('a') ? [`${f.slice(0, -1)}i`] : f.endsWith('i') ? [`${f.slice(0, -1)}a`] : [],
+          ),
+        );
+        for (const form of variants(v.inf, person)) {
+          expect(real.has(form) || swapped.has(form), `${v.inf} ${person}: ${form}`).toBe(
+            true,
+          );
+          // 綴りとして成り立たない形（faccii / dii）は混ぜない
+          expect(form, `${v.inf} ${person}`).not.toMatch(/ii/);
+        }
+      }
+    }
+  });
+
+  it('一回きりの動詞は接続法にも出さない', () => {
+    const randInt = (min, max, rng) => min + Math.floor((max - min + 1) * rng());
+    for (let i = 0; i < 400; i++) {
+      const r = () => ((i * 104729) % 1000) / 1000;
+      const item = buildVerbItem({ verbScope: 'congiuntivo' }, r, randInt);
+      if (!VERBS[item.source.verbIndex].punctual) continue;
+      expect(['presente', 'passatoProssimo']).toContain(item.source.tense);
+    }
+  });
+});

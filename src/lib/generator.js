@@ -478,6 +478,7 @@ export function describeTag(tag) {
       imperfetto: '半過去',
       futuro: '未来',
       condizionale: '条件法',
+      congPresente: '接続法現在',
       'uso-passato': '近過去と半過去の使い分け',
       radice: '未来・条件法の語幹',
       irregolare: '不規則動詞',
@@ -492,6 +493,7 @@ export function describeTag(tag) {
       persona: '人称の取り違え',
       tempo: '時制の取り違え',
       modo: '未来と条件法の取り違え',
+      indicativo: '接続法のところで直説法',
       regolarizzato: '不規則動詞を規則で活用',
     };
     return labels[rest] ?? rest; // それ以外は不定詞そのもの

@@ -8,6 +8,7 @@ import {
   infinitiveGroup,
   regularFutureStem,
   conjugateFromStem,
+  congiuntiveFromPresente,
 } from './verbs.js';
 
 describe('-are 規則動詞（parlare）', () => {
@@ -339,5 +340,38 @@ describe('未来・条件法は語幹1つから作る', () => {
 
   it('知らない時制は例外にする', () => {
     expect(() => conjugateFromStem('sar', 'presente')).toThrow();
+  });
+});
+
+describe('接続法現在は直説法現在から作る', () => {
+  it('1人称単数から io / tu / lui と loro が出る', () => {
+    expect(
+      congiuntiveFromPresente(['vengo', 'vieni', 'viene', 'veniamo', 'venite', 'vengono']),
+    ).toEqual(['venga', 'venga', 'venga', 'veniamo', 'veniate', 'vengano']);
+  });
+
+  it('noi は直説法と同じ形、voi はその -iamo を -iate に替える', () => {
+    const forms = congiuntiveFromPresente([
+      'faccio',
+      'fai',
+      'fa',
+      'facciamo',
+      'fate',
+      'fanno',
+    ]);
+    expect(forms[3]).toBe('facciamo');
+    expect(forms[4]).toBe('facciate');
+  });
+
+  it('現在形から作れないものは語幹を渡す', () => {
+    const presente = ['sono', 'sei', 'è', 'siamo', 'siete', 'sono'];
+    expect(congiuntiveFromPresente(presente, { stem: 'si' })).toEqual([
+      'sia',
+      'sia',
+      'sia',
+      'siamo',
+      'siate',
+      'siano',
+    ]);
   });
 });

@@ -159,6 +159,29 @@ export function conjugateFromStem(stem, tense) {
   return endings.map((ending) => stem + ending);
 }
 
+/**
+ * 不規則動詞の接続法現在を、直説法現在から作る。
+ *
+ * 不規則動詞の接続法現在は 1人称単数から出てくる。
+ *   vengo -> venga / vengano     esco -> esca / escano
+ *   faccio -> faccia             vado -> vada
+ * noi は直説法とまったく同じ形で、voi はその -iamo を -iate に替えるだけ。
+ *   facciamo -> facciate         siamo -> siate
+ * だから活用表を持たなくても、現在形さえあれば6形そろう。
+ *
+ * essere / avere / sapere / dare / stare / dovere だけはこの手順から外れるので、
+ * 語幹（si- abbi- sappi- di- sti- debb-）を渡して差し替える。
+ *
+ * @param {string[]} presente 直説法現在の6形
+ * @param {{stem?: string}} [options] 語幹を差し替えるとき
+ */
+export function congiuntiveFromPresente(presente, { stem } = {}) {
+  const base = stem ?? presente[0].replace(/o$/, '');
+  const noi = presente[3];
+  const voi = noi.replace(/iamo$/, 'iate');
+  return [`${base}a`, `${base}a`, `${base}a`, noi, voi, `${base}ano`];
+}
+
 /** 規則動詞の過去分詞（-ato / -uto / -ito） */
 export function regularParticiple(infinitive) {
   const group = infinitiveGroup(infinitive);

@@ -48,6 +48,7 @@ export const ERROR_TYPE_ORDER = [
   'verb:regolarizzato',
   'verb:tempo',
   'verb:modo',
+  'verb:indicativo',
   'verb:persona',
   'art:attacco',
   'art:genere',
