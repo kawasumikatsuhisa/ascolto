@@ -85,6 +85,8 @@ export default function DrillScreen({
     return type ? describeTag(type) : null;
   }, [item, session.picked, session.checked]);
 
+  const judged = session.checked !== null;
+
   const say = () => speak(item.speech, settings.speechRate);
 
   useEffect(() => {
@@ -189,7 +191,22 @@ export default function DrillScreen({
         </div>
       </header>
 
-      <main className="card">
+      <main className={`card${judged ? (session.checked ? ' card-ok' : ' card-ng') : ''}`}>
+        {/* 正誤はカードの上端いっぱいの帯で出す。文字だけだと、電車で
+            ちらっと見たときに正解だったのかどうかが分からない */}
+        {judged && (
+          <div className={`verdict ${session.checked ? 'ok' : 'ng'}`}>
+            <span className="verdict-mark" aria-hidden="true">
+              {session.checked ? '✓' : '✕'}
+            </span>
+            <span>{session.checked ? '正解' : '不正解'}</span>
+            {/* 採点は「次へ」で確定するので、いま答えたぶんを足して見せる */}
+            {session.checked && progress.combo + 1 >= 2 && (
+              <span className="combo">連続{progress.combo + 1}問</span>
+            )}
+          </div>
+        )}
+
         <p className="prompt-note">{item.promptNote}</p>
         <p className={`prompt prompt-${sizeClass(item.prompt)}`}>
           <Wrapped text={item.prompt} />
@@ -197,21 +214,14 @@ export default function DrillScreen({
 
         {revealed && (
           <div className="answer-block">
-            {session.checked !== null && (
-              <p className={`verdict ${session.checked ? 'ok' : 'ng'}`}>
-                {session.checked ? '正解' : '不正解'}
-                {/* 採点は「次へ」で確定するので、いま答えたぶんを足して見せる */}
-                {session.checked && progress.combo + 1 >= 2 && (
-                  <span className="combo"> 連続{progress.combo + 1}問</span>
-                )}
-              </p>
-            )}
             {session.checked === false && mode !== 'reveal' && (
               <p className="picked">
                 {mode === 'typing' ? '入力したのは ' : '選んだのは '}
                 {session.picked ? (
                   <>
-                    <Wrapped text={session.picked} />
+                    <span className="picked-text">
+                      <Wrapped text={session.picked} />
+                    </span>
                     {pickedMeaning && `（${pickedMeaning}）`}
                     {pickedError && (
                       <span className="picked-type">{pickedError}</span>
@@ -222,7 +232,10 @@ export default function DrillScreen({
                 )}
               </p>
             )}
-            <p className={`answer answer-${sizeClass(item.answer)}`}>
+            {session.checked === false && <p className="answer-label">正しくは</p>}
+            <p
+              className={`answer answer-${sizeClass(item.answer)}${judged ? ' answer-good' : ''}`}
+            >
               <Wrapped text={item.answer} />
             </p>
             {item.answerNote && <p className="answer-note">{item.answerNote}</p>}
@@ -236,18 +249,32 @@ export default function DrillScreen({
       </main>
 
       <div className="actions">
-        {/* 選択式: 選ぶ → 正誤と規則を見る → 次へ */}
-        {mode === 'choice' && !revealed && (
-          <div className="choice-list">
-            {item.choices.map((choice) => (
-              <button
-                key={choice}
-                className={`btn btn-choice choice-${choiceSize}`}
-                onClick={() => onCheck(choice === item.answer, choice)}
-              >
-                <Wrapped text={choice} />
-              </button>
-            ))}
+        {/* 選択式: 選ぶ → 正誤と規則を見る → 次へ。
+            答え合わせのあとも選択肢は残す。どれを選んで、どれが正解だったのかが
+            並んで見えないと、何を間違えたのかが結びつかない */}
+        {mode === 'choice' && (
+          <div className={`choice-list${revealed ? ' choice-list-done' : ''}`}>
+            {item.choices.map((choice) => {
+              const state = !revealed
+                ? ''
+                : choice === item.answer
+                  ? ' is-answer'
+                  : choice === session.picked
+                    ? ' is-picked'
+                    : ' is-off';
+              return (
+                <button
+                  key={choice}
+                  className={`btn btn-choice choice-${choiceSize}${state}`}
+                  disabled={revealed}
+                  onClick={() => onCheck(choice === item.answer, choice)}
+                >
+                  <Wrapped text={choice} />
+                  {state === ' is-answer' && <span className="choice-mark">✓</span>}
+                  {state === ' is-picked' && <span className="choice-mark">✕</span>}
+                </button>
+              );
+            })}
           </div>
         )}
 

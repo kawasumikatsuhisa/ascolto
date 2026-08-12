@@ -16,6 +16,8 @@
   --hard: #e0a72c;
   --again: #ef6461;
   --danger: #ef6461;
+  --good-bg: rgba(76, 195, 138, 0.18);
+  --again-bg: rgba(239, 100, 97, 0.18);
   --radius: 16px;
   --tap: 60px;
 }
@@ -33,6 +35,8 @@
   --hard: #a9711a;
   --again: #cc3a37;
   --danger: #cc3a37;
+  --good-bg: rgba(23, 148, 95, 0.14);
+  --again-bg: rgba(204, 58, 55, 0.14);
 }
 
 * {
@@ -357,6 +361,15 @@ button {
   overflow-y: auto;
 }
 
+/* 正誤はカードの縁でも示す。帯を見落としても色で分かる */
+.card-ok {
+  box-shadow: inset 0 0 0 2px var(--good);
+}
+
+.card-ng {
+  box-shadow: inset 0 0 0 2px var(--again);
+}
+
 /* カードが余白を吸うので、操作列は自然に最下部へ落ちる */
 .card ~ .actions {
   margin-top: 0;
@@ -432,6 +445,16 @@ button {
   font-size: clamp(0.85rem, 3.7vw, 1.3rem);
 }
 
+.answer-good {
+  color: var(--good);
+}
+
+.answer-label {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
 .answer-note {
   margin: 0;
   color: var(--text-dim);
@@ -439,17 +462,37 @@ button {
 }
 
 .verdict {
-  margin: 0;
-  font-size: 0.95rem;
+  align-self: stretch;
+  /* カードが縮んで中身がスクロールしても、判定だけは上に貼りついたまま
+     見えている必要がある（小さい画面ではここが最初に隠れてしまう） */
+  position: sticky;
+  top: -18px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: -6px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 1.15rem;
   font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.verdict-mark {
+  font-size: 1.35rem;
+  line-height: 1;
 }
 
 .verdict.ok {
   color: var(--good);
+  background: linear-gradient(var(--good-bg), var(--good-bg)), var(--surface);
 }
 
 .verdict.ng {
   color: var(--again);
+  background: linear-gradient(var(--again-bg), var(--again-bg)), var(--surface);
 }
 
 .grade-row {
@@ -488,12 +531,49 @@ button {
 }
 
 .btn-choice {
+  flex-direction: row;
+  gap: 0;
   min-height: 58px;
   padding: 10px 14px;
   font-weight: 600;
   line-height: 1.25;
   overflow-wrap: break-word;
   background: var(--surface);
+}
+
+/* 答え合わせのあとは、正解と自分の選択だけを立たせて残りは沈める */
+.choice-list-done .btn-choice {
+  min-height: 46px;
+  /* disabled のボタンは Safari が勝手に灰色にするので、色は自分で決める
+     （この下の is-answer / is-picked が後勝ちで上書きする） */
+  color: var(--text);
+}
+
+.btn-choice:disabled {
+  cursor: default;
+}
+
+.btn-choice.is-answer {
+  border-color: var(--good);
+  background: var(--good-bg);
+  color: var(--good);
+}
+
+.btn-choice.is-picked {
+  border-color: var(--again);
+  background: var(--again-bg);
+  color: var(--again);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.btn-choice.is-off {
+  opacity: 0.4;
+}
+
+.choice-mark {
+  margin-left: 8px;
+  font-weight: 700;
 }
 
 /* 長い綴りでも1行に収まるところまで落とす */
@@ -518,6 +598,13 @@ button {
   margin: 0;
   color: var(--text-dim);
   font-size: 0.85rem;
+}
+
+/* 選んだ（打った）ほうは打ち消して、正解と見分けがつくようにする */
+.picked-text {
+  color: var(--again);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
 }
 
 /* 外した規則の名前。答えそのものより弱く、でも読み飛ばさない程度に */
