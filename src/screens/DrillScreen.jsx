@@ -253,24 +253,23 @@ export default function DrillScreen({
 
           {revealed && (
             <div className="answer-block">
-              {/* 入力式は打った綴りを見せる。選択式は下の選択肢に ✕ が付くので出さない。
-                単語だけは、選んだ語の意味も添えないと違いが分からない */}
-              {session.checked === false &&
-                (mode === 'typing' || (mode === 'choice' && pickedMeaning)) && (
-                  <p className="picked">
-                    {mode === 'typing' ? '入力したのは ' : '選んだのは '}
-                    {session.picked ? (
-                      <>
-                        <span className="picked-text">
-                          <Wrapped text={session.picked} />
-                        </span>
-                        {pickedMeaning && `（${pickedMeaning}）`}
-                      </>
-                    ) : (
-                      '（未入力）'
-                    )}
-                  </p>
-                )}
+              {/* 選んだ（打った）ものはここで見せる。答え合わせのあとに
+                  選択肢を片づけてしまうので、ここが唯一の手がかりになる */}
+              {session.checked === false && mode !== 'reveal' && (
+                <p className="picked">
+                  {mode === 'typing' ? '入力したのは ' : '選んだのは '}
+                  {session.picked ? (
+                    <>
+                      <span className="picked-text">
+                        <Wrapped text={session.picked} />
+                      </span>
+                      {pickedMeaning && `（${pickedMeaning}）`}
+                    </>
+                  ) : (
+                    '（未入力）'
+                  )}
+                </p>
+              )}
               {!cloze && (
                 <>
                   {session.checked === false && (
@@ -298,35 +297,20 @@ export default function DrillScreen({
 
       <div className="actions">
         {/* 選択式: 選ぶ → 正誤と規則を見る → 次へ。
-            答え合わせのあとも選択肢は残す。どれを選んで、どれが正解だったのかが
-            並んで見えないと、何を間違えたのかが結びつかない */}
-        {mode === 'choice' && (
-          <div className={`choice-list${revealed ? ' choice-list-done' : ''}`}>
-            {item.choices.map((choice) => {
-              const state = !revealed
-                ? ''
-                : choice === item.answer
-                  ? ' is-answer'
-                  : choice === session.picked
-                    ? ' is-picked'
-                    : ' is-off';
-              return (
-                <button
-                  key={choice}
-                  className={`btn btn-choice choice-${choiceSize}${state}`}
-                  disabled={revealed}
-                  onClick={() => onCheck(choice === item.answer, choice)}
-                >
-                  <Wrapped text={choice} />
-                  {state === ' is-answer' && (
-                    <span className="choice-mark">✓</span>
-                  )}
-                  {state === ' is-picked' && (
-                    <span className="choice-mark">✕</span>
-                  )}
-                </button>
-              );
-            })}
+            答え合わせのあとは選択肢を片づける。4つ並んだまま残すと、
+            答えのカードに使える高さが答えの長さしだいで足りなくなる。
+            何を選んだのかはカードの中に出してある */}
+        {mode === 'choice' && !revealed && (
+          <div className="choice-list">
+            {item.choices.map((choice) => (
+              <button
+                key={choice}
+                className={`btn btn-choice choice-${choiceSize}`}
+                onClick={() => onCheck(choice === item.answer, choice)}
+              >
+                <Wrapped text={choice} />
+              </button>
+            ))}
           </div>
         )}
 

@@ -566,41 +566,6 @@ button {
   background: var(--surface);
 }
 
-/* 答え合わせのあとは、正解と自分の選択だけを立たせて残りは沈める */
-.choice-list-done .btn-choice {
-  min-height: 46px;
-  /* disabled のボタンは Safari が勝手に灰色にするので、色は自分で決める
-     （この下の is-answer / is-picked が後勝ちで上書きする） */
-  color: var(--text);
-}
-
-.btn-choice:disabled {
-  cursor: default;
-}
-
-.btn-choice.is-answer {
-  border-color: var(--good);
-  background: var(--good-bg);
-  color: var(--good);
-}
-
-.btn-choice.is-picked {
-  border-color: var(--again);
-  background: var(--again-bg);
-  color: var(--again);
-  text-decoration: line-through;
-  text-decoration-thickness: 2px;
-}
-
-.btn-choice.is-off {
-  opacity: 0.4;
-}
-
-.choice-mark {
-  margin-left: 8px;
-  font-weight: 700;
-}
-
 /* 長い綴りでも1行に収まるところまで落とす */
 .choice-xl,
 .choice-lg {
