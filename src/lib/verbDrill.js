@@ -21,12 +21,14 @@ import { VERBS, verbByInfinitive } from './verbData.js';
 export const VERB_SCOPES = [
   { id: 'presente', ja: '現在だけ', hint: '直説法現在' },
   { id: 'passato', ja: '現在 + 近過去', hint: 'essere / avere の選択' },
+  { id: 'imperfetto', ja: '＋ 半過去', hint: '近過去との使い分け' },
 ];
 
 /** どこまで開けるとどの時制が出るか */
 const SCOPE_TENSES = {
   presente: ['presente'],
   passato: ['presente', 'passatoProssimo'],
+  imperfetto: ['presente', 'passatoProssimo', 'imperfetto'],
 };
 
 export const tensesInScope = (scope) => SCOPE_TENSES[scope] ?? SCOPE_TENSES.presente;
@@ -89,10 +91,13 @@ export function formFor(verb, tense, person, agreement = {}) {
  * 1. 規則どおりに活用してしまった形（不規則動詞のとき）
  * 2. 別の人称
  */
-export function verbVariants({ verbIndex, tense, person, agreement }) {
+export function verbVariants({ verbIndex, tense, person, agreement, scope }) {
   const verb = VERBS[verbIndex];
   const correct = formFor(verb, tense, person, agreement);
   const out = [];
+  // 半過去まで開けているときだけ、時制の取り違えを誤答に混ぜる。
+  // 使い分けを覚える前に出しても、ただ紛らわしいだけになる。
+  const contrastTenses = tensesInScope(scope).includes('imperfetto');
 
   if (isCompound(tense)) {
     const other = verb.aux === 'essere' ? 'avere' : 'essere';
@@ -103,6 +108,9 @@ export function verbVariants({ verbIndex, tense, person, agreement }) {
 
     // 助動詞の取り違え。ho andato がいちばん踏まれる地雷
     out.push(`${otherAux} ${agreed}`);
+
+    // 時制の取り違え（半過去との使い分け）
+    if (contrastTenses) out.push(formsOf(verb, 'imperfetto')[person]);
 
     // 過去分詞の一致違い（essere を取る動詞だけ）
     if (verb.aux === 'essere') {
@@ -137,6 +145,12 @@ export function verbVariants({ verbIndex, tense, person, agreement }) {
     });
   }
 
+  // 半過去なら、近過去との取り違えをいちばん前に置く
+  if (tense === 'imperfetto' && contrastTenses) {
+    out.push(compoundForm(verb, 'passatoProssimo', person, agreement));
+    out.push(formsOf(verb, 'presente')[person]);
+  }
+
   if (isIrregularIn(verb, tense)) {
     // 不規則を知らずに規則活用してしまった形
     const regular = conjugateRegular(verb.inf, tense, { isc: verb.isc });
@@ -160,8 +174,16 @@ export function verbVariants({ verbIndex, tense, person, agreement }) {
 }
 
 /** その問題が問うている型をタグにする */
-export function verbTags(verb, tense) {
+export function verbTags(verb, tense, scope) {
   const tags = ['verb:tutto', `verb:${tense}`, `verb:${verb.inf}`];
+
+  // 近過去と半過去が両方出るときは、使い分けそのものが問われている
+  if (
+    tensesInScope(scope).includes('imperfetto') &&
+    (isCompound(tense) || tense === 'imperfetto')
+  ) {
+    tags.push('verb:uso-passato');
+  }
 
   if (isCompound(tense)) {
     // 複合時制で問われるのは助動詞の選択と一致。人称より先にここを見せたい
@@ -172,12 +194,18 @@ export function verbTags(verb, tense) {
   }
 
   tags.push(isIrregularIn(verb, tense) ? 'verb:irregolare' : 'verb:regolare');
-  if (verb.isc) tags.push('verb:isc');
+  if (verb.isc && tense === 'presente') tags.push('verb:isc');
   return tags;
 }
 
 /** 答えの下に出す説明 */
 export function verbHint(verb, tense) {
+  if (tense === 'imperfetto') {
+    const base = '習慣や状態は半過去。一回きりの出来事なら近過去';
+    return isIrregularIn(verb, tense)
+      ? `${base}（${verb.inf} は不規則: ${formsOf(verb, tense)[0]}）`
+      : base;
+  }
   if (isCompound(tense)) {
     const aux = `助動詞は ${verb.aux}`;
     if (verb.aux === 'essere') return `${aux}。過去分詞は主語と性数一致する`;
@@ -193,10 +221,17 @@ export function verbHint(verb, tense) {
 const TENSE_LABEL = {
   presente: '直説法現在',
   passatoProssimo: '近過去',
+  imperfetto: '半過去',
 };
 
-/** 過去の時制には時を示す語を前に置く。これが無いと時制を決められない。 */
-const TIME_MARKER = { passatoProssimo: 'Ieri' };
+/**
+ * 時を示す語。これが無いとどの時制か決められない。
+ * 近過去は一回きりの出来事、半過去は習慣や状態を表す語を選ぶ。
+ */
+const TIME_MARKERS = {
+  passatoProssimo: ['Ieri'],
+  imperfetto: ['Ogni estate', 'Di solito', 'Ogni giorno'],
+};
 
 /**
  * 動詞の問題を1つ作る。
@@ -207,7 +242,10 @@ const TIME_MARKER = { passatoProssimo: 'Ieri' };
 export function buildVerbItem(settings, rng, randInt) {
   const verbIndex = randInt(0, VERBS.length - 1, rng);
   const verb = VERBS[verbIndex];
-  const tenses = tensesInScope(settings.verbScope);
+  const tenses = tensesInScope(settings.verbScope).filter(
+    // nascere や morire は「毎年〜していた」にならない
+    (t) => !(t === 'imperfetto' && verb.punctual),
+  );
   const tense = tenses[randInt(0, tenses.length - 1, rng)];
 
   // essere を取る動詞の複合時制だけ、性がはっきりする主語を使う。
@@ -224,13 +262,21 @@ export function buildVerbItem(settings, rng, randInt) {
 
   const answer = formFor(verb, tense, person, agreement);
   const subject = named ? named.text : PERSONS[person].it;
-  const marker = TIME_MARKER[tense];
+  const markers = TIME_MARKERS[tense];
+  const marker = markers ? markers[randInt(0, markers.length - 1, rng)] : null;
   const sentence = `${marker ? `${marker} ` : ''}${subject} ___ ${verb.tail}.`;
 
   return {
     key: `verb:${verb.inf}:${tense}:${person}:${agreement.gender}${agreement.number}`,
     category: 'verbs',
-    source: { kind: 'verb', verbIndex, tense, person, agreement },
+    source: {
+      kind: 'verb',
+      verbIndex,
+      tense,
+      person,
+      agreement,
+      scope: settings.verbScope,
+    },
     reverse: false,
     prompt: sentence,
     promptNote: `${TENSE_LABEL[tense]} · ${verb.inf}（${verb.ja}）`,
@@ -239,6 +285,6 @@ export function buildVerbItem(settings, rng, randInt) {
     speech: sentence.replace('___', answer),
     answerLang: 'it',
     inputMode: 'text',
-    tags: verbTags(verb, tense),
+    tags: verbTags(verb, tense, settings.verbScope),
   };
 }

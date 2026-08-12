@@ -78,13 +78,24 @@ export function verbStem(infinitive) {
 
 /**
  * 綴りの調整。-are 動詞だけに効く。
- *  cercare + i  -> cerchi  （c/g の音を保つため h を入れる）
- *  mangiare + i -> mangi   （ci/gi の i は e・i の前で落とす）
+ *  cercare  + i   -> cerchi    （c/g の音を保つため h を入れる）
+ *  mangiare + i   -> mangi     （ci/gi の i は e と i のどちらの前でも落ちる）
+ *  studiare + i   -> studi     （語幹の i は i の前でだけ重ならない）
+ *  studiare + erò -> studierò  （e の前では残る。ci/gi との違いはここ）
+ *
+ * sciare のように i にアクセントが乗る語（tu scii）はこの規則から外れるが、
+ * 数が少ないので扱わない。
  */
 function adjust(stem, ending, group) {
   if (group !== 'are') return stem;
   if (!/^[ei]/.test(ending)) return stem;
+
+  // ci / gi の i は c・g を柔らかく保つためだけのもの
   if (/[cg]i$/.test(stem)) return stem.slice(0, -1);
+
+  // それ以外の i 語幹は、語尾も i で始まるときだけ1つにまとめる
+  if (/i$/.test(stem)) return /^i/.test(ending) ? stem.slice(0, -1) : stem;
+
   if (/[cg]$/.test(stem)) return `${stem}h`;
   return stem;
 }

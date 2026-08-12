@@ -471,6 +471,8 @@ export function describeTag(tag) {
       tutto: '動詞ぜんぶ',
       presente: '直説法現在',
       passatoProssimo: '近過去',
+      imperfetto: '半過去',
+      'uso-passato': '近過去と半過去の使い分け',
       irregolare: '不規則動詞',
       regolare: '規則動詞',
       isc: '-isc- 型',

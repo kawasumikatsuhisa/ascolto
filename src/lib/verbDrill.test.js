@@ -406,3 +406,106 @@ describe('近過去', () => {
     expect(both).toEqual(new Set(['presente', 'passatoProssimo']));
   });
 });
+
+describe('半過去', () => {
+  const imperfetto = { ...verbsOnly, verbScope: 'imperfetto' };
+
+  it.each([
+    ['essere', ['ero', 'eri', 'era', 'eravamo', 'eravate', 'erano']],
+    ['fare', ['facevo', 'facevi', 'faceva', 'facevamo', 'facevate', 'facevano']],
+    ['dire', ['dicevo', 'dicevi', 'diceva', 'dicevamo', 'dicevate', 'dicevano']],
+    ['bere', ['bevevo', 'bevevi', 'beveva', 'bevevamo', 'bevevate', 'bevevano']],
+  ])('%s は不規則', (inf, expected) => {
+    expect(formsOf(verbByInfinitive(inf), 'imperfetto')).toEqual(expected);
+  });
+
+  it('不規則なのはこの4語だけで、ほかは生成する', () => {
+    const stored = VERBS.filter((v) => v.irregular?.imperfetto).map((v) => v.inf);
+    expect(stored.sort()).toEqual(['bere', 'dire', 'essere', 'fare']);
+  });
+
+  it('近過去の形が誤答の先頭に来る', () => {
+    const index = VERBS.findIndex((v) => v.inf === 'andare');
+    const variants = verbVariants({
+      verbIndex: index,
+      tense: 'imperfetto',
+      person: 0,
+      agreement: { gender: 'm', number: 'sing' },
+      scope: 'imperfetto',
+    });
+    expect(variants[0]).toBe('sono andato');
+  });
+
+  it('近過去の問題には半過去が誤答に入る', () => {
+    const index = VERBS.findIndex((v) => v.inf === 'andare');
+    const variants = verbVariants({
+      verbIndex: index,
+      tense: 'passatoProssimo',
+      person: 0,
+      agreement: { gender: 'm', number: 'sing' },
+      scope: 'imperfetto',
+    });
+    expect(variants).toContain('andavo');
+  });
+
+  it('半過去を開けていなければ時制の取り違えは混ぜない', () => {
+    const index = VERBS.findIndex((v) => v.inf === 'andare');
+    const variants = verbVariants({
+      verbIndex: index,
+      tense: 'passatoProssimo',
+      person: 0,
+      agreement: { gender: 'm', number: 'sing' },
+      scope: 'passato',
+    });
+    expect(variants).not.toContain('andavo');
+  });
+
+  it('習慣を表す語が前に付く', () => {
+    const rng = seeded(31);
+    for (let i = 0; i < 600; i++) {
+      const item = generateItem(imperfetto, {}, { rng });
+      if (item.source.tense !== 'imperfetto') continue;
+      expect(item.prompt).toMatch(/^(Ogni estate|Di solito|Ogni giorno) /);
+    }
+  });
+
+  it('一回きりの動詞は半過去で出さない', () => {
+    const rng = seeded(32);
+    for (let i = 0; i < 1200; i++) {
+      const item = generateItem(imperfetto, {}, { rng });
+      const verb = VERBS[item.source.verbIndex];
+      if (verb.punctual) expect(item.source.tense).not.toBe('imperfetto');
+    }
+  });
+
+  it('近過去と半過去の両方が出る', () => {
+    const rng = seeded(33);
+    const tenses = new Set();
+    for (let i = 0; i < 600; i++) {
+      tenses.add(generateItem(imperfetto, {}, { rng }).source.tense);
+    }
+    expect(tenses).toEqual(new Set(['presente', 'passatoProssimo', 'imperfetto']));
+  });
+
+  it('使い分けのタグが付く', () => {
+    const rng = seeded(34);
+    for (let i = 0; i < 600; i++) {
+      const item = generateItem(imperfetto, {}, { rng });
+      if (item.source.tense === 'presente') {
+        expect(item.tags).not.toContain('verb:uso-passato');
+      } else {
+        expect(item.tags).toContain('verb:uso-passato');
+      }
+    }
+  });
+
+  it('選択肢が4つで、正解がちょうど1つ', () => {
+    const rng = seeded(35);
+    for (let i = 0; i < 800; i++) {
+      const item = generateItem(imperfetto, {}, { rng });
+      expect(item.choices).toHaveLength(CHOICE_COUNT);
+      expect(item.choices.filter((c) => c === item.answer)).toHaveLength(1);
+      expect(new Set(item.choices).size).toBe(CHOICE_COUNT);
+    }
+  });
+});

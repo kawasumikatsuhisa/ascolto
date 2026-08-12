@@ -20,6 +20,7 @@
  * @property {string|null} [pp] 不規則な過去分詞。規則どおりなら省略
  * @property {boolean} [isc] -ire の -isc- 型
  * @property {Record<string,string[]>} [irregular] 不規則な単純形
+ * @property {boolean} [punctual] 習慣として繰り返せない動詞（半過去では出さない）
  */
 
 /** @type {VerbEntry[]} */
@@ -33,6 +34,7 @@ export const VERBS = [
     pp: 'stato',
     irregular: {
       presente: ['sono', 'sei', 'è', 'siamo', 'siete', 'sono'],
+      imperfetto: ['ero', 'eri', 'era', 'eravamo', 'eravate', 'erano'],
     },
   },
   {
@@ -52,6 +54,8 @@ export const VERBS = [
     pp: 'fatto',
     irregular: {
       presente: ['faccio', 'fai', 'fa', 'facciamo', 'fate', 'fanno'],
+      // 語幹が fac- に伸びる。規則では favo になってしまう
+      imperfetto: ['facevo', 'facevi', 'faceva', 'facevamo', 'facevate', 'facevano'],
     },
   },
   {
@@ -89,6 +93,7 @@ export const VERBS = [
     pp: 'detto',
     irregular: {
       presente: ['dico', 'dici', 'dice', 'diciamo', 'dite', 'dicono'],
+      imperfetto: ['dicevo', 'dicevi', 'diceva', 'dicevamo', 'dicevate', 'dicevano'],
     },
   },
   {
@@ -154,6 +159,7 @@ export const VERBS = [
     pp: 'bevuto',
     irregular: {
       presente: ['bevo', 'bevi', 'beve', 'beviamo', 'bevete', 'bevono'],
+      imperfetto: ['bevevo', 'bevevi', 'beveva', 'bevevamo', 'bevevate', 'bevevano'],
     },
   },
   {
@@ -231,6 +237,7 @@ export const VERBS = [
     tail: 'di fame',
     aux: 'essere',
     pp: 'morto',
+    punctual: true, // 「毎年〜していた」にならないので半過去では出さない
     irregular: {
       presente: ['muoio', 'muori', 'muore', 'moriamo', 'morite', 'muoiono'],
     },
@@ -247,7 +254,7 @@ export const VERBS = [
   { inf: 'perdere', ja: '失う、乗り遅れる', tail: 'il treno', aux: 'avere', pp: 'perso' },
   { inf: 'aprire', ja: '開ける', tail: 'la porta', aux: 'avere', pp: 'aperto' },
   { inf: 'offrire', ja: 'おごる', tail: 'il caffè', aux: 'avere', pp: 'offerto' },
-  { inf: 'nascere', ja: '生まれる', tail: 'a Roma', aux: 'essere', pp: 'nato' },
+  { inf: 'nascere', ja: '生まれる', tail: 'a Roma', aux: 'essere', pp: 'nato', punctual: true },
   { inf: 'scendere', ja: '降りる', tail: 'alla prossima fermata', aux: 'essere', pp: 'sceso' },
 
   // -------------------------------------------------------- 完全に規則的

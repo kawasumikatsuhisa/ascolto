@@ -190,6 +190,38 @@ describe('綴りの調整', () => {
     expect(conjugateRegular('mangiare', 'congPresente')[5]).toBe('mangino');
   });
 
+  it('-iare の語幹の i は i の前でだけ落ちる', () => {
+    // studii / studiiamo にならないこと。ci/gi と違って e の前では残る
+    expect(conjugateRegular('studiare', 'presente')).toEqual([
+      'studio',
+      'studi',
+      'studia',
+      'studiamo',
+      'studiate',
+      'studiano',
+    ]);
+    expect(conjugateRegular('studiare', 'futuro')[0]).toBe('studierò');
+    expect(conjugateRegular('studiare', 'condizionale')[0]).toBe('studierei');
+    expect(conjugateRegular('studiare', 'congPresente')).toEqual([
+      'studi',
+      'studi',
+      'studi',
+      'studiamo',
+      'studiate',
+      'studino',
+    ]);
+  });
+
+  it('どの -are 動詞でも i が3つ以上続かない', () => {
+    for (const verb of ['studiare', 'mangiare', 'cominciare', 'cercare', 'parlare']) {
+      for (const tense of SIMPLE_TENSES) {
+        for (const form of conjugateRegular(verb, tense)) {
+          expect(form, `${verb} ${tense}`).not.toMatch(/ii/);
+        }
+      }
+    }
+  });
+
   it('-ciare も同じ', () => {
     expect(conjugateRegular('cominciare', 'presente')[1]).toBe('cominci');
     expect(conjugateRegular('cominciare', 'futuro')[0]).toBe('comincerò');
